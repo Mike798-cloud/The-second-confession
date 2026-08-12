@@ -8,12 +8,12 @@ window.CASE17 = {
   people:{
     chen:{name:"陈默",role:"主动投案者 / 林夏弟弟",portrait:"portrait_chen_v6.jpg",public:"28岁，网约车司机。案发后三天主动到案。",relation:"林夏的弟弟。少年时期由姐姐照顾长大。",midStage:3,mid:"补充影像确认：其车辆21:27进入车库，21:29才进入B座。",later:"他并没有亲历最初冲突，但后来确实进入4-702，并主动承担了整起案件。"},
     lin:{name:"林夏",role:"迟夏书店经营者",portrait:"portrait_lin_v6.jpg",public:"34岁。与死者邱承存在担保债务纠纷。",relation:"陈默姐姐，与赵序相识多年。",midStage:4,mid:"20:50消息缓存显示，她在陈默到场前已经知道邱承倒地且仍有呼吸。",later:"她在最初冲突中造成伤害；之后曾尝试拨打120，却没有完成求助。"},
-    zhao:{name:"赵序",role:"物业设备运维工程师",portrait:"portrait_zhao_v6.jpg",public:"40岁。负责西河公寓门禁、水表等设备维护。",relation:"与林家相识十余年。",midStage:5,mid:"物业审计日志记录其21:06—21:10连续查询门禁与住户卡信息。",later:"他没有篡改系统数据，但熟悉各套系统记录的边界，并参与了事后掩饰设计。"},
-    qiu:{name:"邱承",role:"死者 / 民间债务中介",portrait:"portrait_qiu_v6.jpg",public:"38岁。长期处理私人债务，曾被投诉暴力催收。",relation:"与林夏存在债务纠纷。",midStage:6,mid:"法医补充材料将“最初伤害”与“伤后救助窗口”拆成了两个时间阶段。",later:"其个人品行与死亡过程需要分别评价。"},
-    han:{name:"韩川",role:"原案主办侦查员",portrait:"portrait_han_v6.jpg",public:"45岁。陈默投案后负责原案证据闭环。",relation:"与涉案人员无私人关系。",midStage:2,mid:"补充复核开始后，他同意把原案中的电子记录重新按来源拆开，而不是沿用旧结论。",later:"没有证据证明他伪造材料；原案错误来自对真实记录的过度解释。"},
-    sun:{name:"孙岚",role:"行为分析顾问",portrait:"portrait_sun_v6.jpg",public:"36岁。本次补充复核顾问。",relation:"未参与原案侦查。",midStage:1,mid:"她要求讯问观察只写可见动作与停顿，不把“冷静”“沉默”直接判成谎言。",later:"她坚持只记录可观察行为，不把停顿、平静等表现直接写成谎言。"},
-    feng:{name:"冯越",role:"西河公寓夜班保安",portrait:"scene_corridor.jpg",public:"52岁。案发当晚值班。",relation:"与住户无私人关系。",midStage:3,mid:"补录笔录承认自己20:30前后曾离岗抽烟，因此原笔录中的时间描述并不完整。",later:"最初笔录因担心离岗抽烟被处罚而压缩了一段目击。"},
-    zhong:{name:"钟嘉",role:"快递员",portrait:"scene_bookstore.jpg",public:"25岁。案发夜在快递柜附近补柜。",relation:"与核心人物无私人关系。",midStage:2,mid:"补充说明：21:38只听见柜门开启声，没有看清开柜人的脸。",later:"他只听到柜门开启，从未确认开柜人的脸。"}
+    zhao:{name:"赵序",role:"物业设备运维工程师",portrait:"portrait_zhao_v7.jpg",public:"40岁。负责西河公寓门禁、水表等设备维护。",relation:"与林家相识十余年。",midStage:5,mid:"物业审计日志记录其21:06—21:10连续查询门禁与住户卡信息。",later:"他没有篡改系统数据，但熟悉各套系统记录的边界，并参与了事后掩饰设计。"},
+    qiu:{name:"邱承",role:"死者 / 民间债务中介",portrait:"portrait_qiu_v7.jpg",public:"38岁。长期处理私人债务，曾被投诉暴力催收。",relation:"与林夏存在债务纠纷。",midStage:6,mid:"法医补充材料将“最初伤害”与“伤后救助窗口”拆成了两个时间阶段。",later:"其个人品行与死亡过程需要分别评价。"},
+    han:{name:"韩川",role:"原案主办侦查员",portrait:"portrait_han_v7.jpg",public:"45岁。陈默投案后负责原案证据闭环。",relation:"与涉案人员无私人关系。",midStage:2,mid:"补充复核开始后，他同意把原案中的电子记录重新按来源拆开，而不是沿用旧结论。",moment:"他不回避原案判断：主动投案、凶器吻合、电子记录连续，在当时都指向同一个最省解释成本的模型。真正让他改变的是记录被拆开后，旧模型开始需要越来越多未经证明的‘主语’。",later:"没有证据证明他伪造材料；原案错误来自对真实记录的过度解释。"},
+    sun:{name:"孙岚",role:"行为分析顾问",portrait:"portrait_sun_v7.jpg",public:"36岁。本次补充复核顾问。",relation:"未参与原案侦查。",midStage:1,mid:"她要求讯问观察只写可见动作与停顿，不把“冷静”“沉默”直接判成谎言。",moment:"她拒绝把陈默的冷静写成‘反社会’或‘预谋’。她只记：回答快、层数准确、时间没有修正。直到这些事实与外部记录冲突，心理解释才允许进入。",later:"她坚持只记录可观察行为，不把停顿、平静等表现直接写成谎言。"},
+    feng:{name:"冯越",role:"西河公寓夜班保安",portrait:"portrait_feng_v7.jpg",public:"52岁。案发当晚值班。",relation:"与住户无私人关系。",midStage:3,mid:"补录笔录承认自己20:30前后曾离岗抽烟，因此原笔录中的时间描述并不完整。",moment:"他最初反复强调‘我一直在岗’，直到补录时才承认自己躲到东门雨棚下抽烟。这个隐瞒与命案无关，却让原案把一段不可靠的时间描述当成了稳定目击。",later:"最初笔录因担心离岗抽烟被处罚而压缩了一段目击。"},
+    zhong:{name:"钟嘉",role:"快递员",portrait:"portrait_zhong_v7.jpg",public:"25岁。案发夜在快递柜附近补柜。",relation:"与核心人物无私人关系。",midStage:2,mid:"补充说明：21:38只听见柜门开启声，没有看清开柜人的脸。",moment:"他记得的是柜门的电子提示音和有人从身后经过，而不是一张脸。原笔录里的‘邱承取件’其实是记录人员根据柜号补上的主语。",later:"他只听到柜门开启，从未确认开柜人的脸。"}
   },
   evidence:{
     confession:{no:"E01",name:"第一次讯问录像转写",img:"ev_confession.jpg",kind:"讯问",stage:0,raw:"陈默称21:45左右到4-702，使用桌边黄铜书挡击打邱承；称后来把书挡放回书桌第二层抽屉。"},
@@ -55,7 +55,7 @@ window.CASE17 = {
     transferPass:[
       {img:"film_records_detail.jpg",ambient:"records",sfx:"paper",caption:"讯问、凶器、倒地位置：材料互相对应。",hold:900},
       {img:"film_records_wide.jpg",ambient:"records",sfx:"stamp",stamp:"移送核验通过",hold:1000},
-      {img:"portrait_han_v6.jpg",ambient:"records",speaker:"韩川",line:"讯问、凶器、现场都能互相对应。按程序，把最后一项定位补完。",hold:1500,motion:"still"},
+      {img:"portrait_han_v7.jpg",ambient:"records",speaker:"韩川",line:"讯问、凶器、现场都能互相对应。按程序，把最后一项定位补完。",hold:1500,motion:"still"},
       {img:"scene_apartment_v6.jpg",ambient:"rain",caption:"程序最后一项：补核物证采集位置。",hold:1000,motion:"push"},
       {img:"scene_desk_v6.jpg",ambient:"rain",sfx:"drawer",caption:"4-702 / 原现场复核",hold:1000,motion:"pan-right"}
     ],
@@ -63,7 +63,7 @@ window.CASE17 = {
       {img:"ev_confession.jpg",ambient:"records",sfx:"rec",speaker:"陈默 · 第一次讯问",line:"“擦了一下，放回书桌第二层抽屉。”",hold:1300},
       {img:"scene_drawers_v6.jpg",ambient:"rain",sfx:"drawer",caption:"4-702 / 书桌左侧抽屉柜",hold:1400,motion:"push"},
       {img:"film_interrogation_over_v6.jpg",ambient:"interrogation",sfx:"transition",hold:1200,motion:"still"},
-      {img:"portrait_sun_v6.jpg",ambient:"records",speaker:"孙岚",line:"先把两份原话并列。别急着给这个差异解释。",hold:1500,motion:"still"},
+      {img:"portrait_sun_v7.jpg",ambient:"records",speaker:"孙岚",line:"先把两份原话并列。别急着给这个差异解释。",hold:1500,motion:"still"},
       {img:"film_records_wide.jpg",ambient:"records",sfx:"stamp",stamp:"移送暂缓",caption:"第17号案件转入补充复核。",hold:1400}
     ],
     recordsMontage:[
@@ -74,7 +74,7 @@ window.CASE17 = {
       {img:"ev_water.jpg",ambient:"records",caption:"21:31:17",hold:550},
       {img:"ev_parcel.jpg",ambient:"records",caption:"21:38:22",hold:550},
       {img:"ev_taxi.jpg",ambient:"records",caption:"21:52:04",hold:750},
-      {img:"portrait_han_v6.jpg",ambient:"records",speaker:"韩川",line:"把20:36以后的每一条都拆开。先写它记录了什么，再谈它意味着什么。",hold:1600,motion:"still"}
+      {img:"portrait_han_v7.jpg",ambient:"records",speaker:"韩川",line:"把20:36以后的每一条都拆开。先写它记录了什么，再谈它意味着什么。",hold:1600,motion:"still"}
     ],
     arrivalBreak:[
       {img:"ev_chen_arrival.jpg",ambient:"records",caption:"21:29 / B座消防梯",hold:1100},
@@ -92,11 +92,11 @@ window.CASE17 = {
       {img:"scene_property_v6.jpg",ambient:"fluorescent",caption:"21:06 / 西河公寓物业值班室",hold:1000,motion:"still"},
       {img:"ev_zhao_log.jpg",ambient:"records",sfx:"printer",caption:"审计记录",hold:1200},
       {img:"film_records_detail.jpg",ambient:"records",speaker:"审计员",line:"没有写入。没有删除。没有改时间。",hold:1300},
-      {img:"portrait_zhao_v6.jpg",ambient:"records",speaker:"赵序",line:"我查过门禁，也查过住户卡。系统里留下什么，我比谁都清楚。",hold:1700,motion:"push"}
+      {img:"portrait_zhao_v7.jpg",ambient:"records",speaker:"赵序",line:"我查过门禁，也查过住户卡。系统里留下什么，我比谁都清楚。",hold:1700,motion:"push"}
     ],
     rescueWindow:[
       {img:"scene_forensic_v6.jpg",ambient:"records",sfx:"paper",caption:"法医底稿 · 补充复核",hold:1200,motion:"still"},
-      {img:"portrait_sun_v6.jpg",ambient:"records",speaker:"孙岚",line:"法医给的是时间窗口。责任要回到每个人当时做了什么。",hold:1500,motion:"still"},
+      {img:"portrait_sun_v7.jpg",ambient:"records",speaker:"孙岚",line:"法医给的是时间窗口。责任要回到每个人当时做了什么。",hold:1500,motion:"still"},
       {img:"ev_bookshop_msg.jpg",ambient:"records",speaker:"林夏 · 20:50",line:"“他倒下了，还在喘。”",hold:1100},
       {img:"film_bookstore_counter_v6.jpg",ambient:"rain",sfx:"phone",caption:"20:52 / 120 / 4秒",hold:900},
       {img:"film_corridor_door.jpg",ambient:"rain",caption:"21:29 / 陈默进入B座",hold:900}
@@ -108,17 +108,36 @@ window.CASE17 = {
       {img:"film_interrogation_hands_v6.jpg",ambient:"interrogation",speaker:"韩川",line:"那第一份口供里的细节，从哪来的？",hold:1200},
       {img:"film_chen_close_v6.jpg",ambient:"interrogation",speaker:"陈默",line:"有人告诉我，什么细节必须说对。",hold:2100,motion:"still"}
     ],
+    witnessBoundary:[
+      {img:"portrait_feng_v7.jpg",ambient:"records",sfx:"rec",speaker:"冯越",line:"我看到的是门禁屏幕，不是那张脸。",hold:1500,motion:"still"},
+      {img:"portrait_zhong_v7.jpg",ambient:"records",sfx:"cctv",speaker:"钟嘉",line:"我听见柜门响，但我没回头。",hold:1500,motion:"still"},
+      {img:"portrait_han_v7.jpg",ambient:"records",speaker:"韩川",line:"把主语删掉。先只写他们真正看见、听见的东西。",hold:1700,motion:"push"}
+    ],
     ending:[
-      {img:"film_review_meeting.jpg",ambient:"records",sfx:"printer",caption:"第17号案件补充复核会议",hold:1000},
-      {img:"film_review_meeting.jpg",ambient:"records",sfx:"stamp",stamp:"撤回原移送意见",hold:1100},
+      {img:"film_review_room_v7.jpg",ambient:"records",sfx:"printer",caption:"第17号案件补充复核会议",hold:1000},
+      {img:"film_review_room_v7.jpg",ambient:"records",sfx:"stamp",stamp:"撤回原移送意见",hold:1100},
       {img:"film_interrogation_v6.jpg",ambient:"interrogation",sfx:"door",caption:"陈默 · 补充讯问",hold:800},
       {img:"film_interrogation_hands_v6.jpg",ambient:"interrogation",speaker:"韩川",line:"陈默。我们重新来。",hold:1000},
       {img:"film_chen_close_v6.jpg",ambient:"interrogation",speaker:"陈默",line:"我姐不知道我要来自首。",hold:1500},
       {img:"portrait_lin_v6.jpg",ambient:"records",speaker:"林夏",line:"我拨了120。四秒以后，我挂了。",hold:1500},
-      {img:"portrait_zhao_v6.jpg",ambient:"records",speaker:"赵序",line:"记录没被改过。被利用的是你们看记录的方式。",hold:1600},
-      {img:"portrait_han_v6.jpg",ambient:"records",speaker:"韩川",line:"那就把原结论撤回来。每一段行为，重新写。",hold:1500},
-      {img:"portrait_sun_v6.jpg",ambient:"records",speaker:"孙岚",line:"把行为写清楚，比给一个人贴上结论更重要。",hold:1600,motion:"still"},
-      {img:"film_review_meeting.jpg",ambient:"records",caption:"原案的一句“人是我杀的”，被重新拆回四段可以分别证明的行为。",hold:1700,motion:"still"}
+      {img:"portrait_zhao_v7.jpg",ambient:"records",speaker:"赵序",line:"记录没被改过。被利用的是你们看记录的方式。",hold:1600},
+      {img:"portrait_han_v7.jpg",ambient:"records",speaker:"韩川",line:"那就把原结论撤回来。每一段行为，重新写。",hold:1500},
+      {img:"portrait_sun_v7.jpg",ambient:"records",speaker:"孙岚",line:"把行为写清楚，比给一个人贴上结论更重要。",hold:1600,motion:"still"},
+      {img:"film_review_room_v7.jpg",ambient:"records",caption:"原案的一句“人是我杀的”，被重新拆回四段可以分别证明的行为。",hold:1700,motion:"still"}
+    ],
+    endingComplete:[
+      {img:"film_review_room_v7.jpg",ambient:"records",sfx:"printer",caption:"第17号案件补充复核会议",hold:1000,motion:"still"},
+      {img:"film_review_room_v7.jpg",ambient:"records",sfx:"stamp",stamp:"撤回原移送意见",hold:1200,motion:"push"},
+      {img:"portrait_feng_v7.jpg",ambient:"records",speaker:"冯越",line:"那晚我没有看见邱承本人。我只看见门禁屏幕亮了一次。",hold:1600,motion:"still"},
+      {img:"portrait_zhong_v7.jpg",ambient:"records",speaker:"钟嘉",line:"柜门响过，但我没回头。把‘邱承’两个字从我的笔录里删掉吧。",hold:1700,motion:"still"},
+      {img:"film_interrogation_v6.jpg",ambient:"interrogation",sfx:"door",caption:"陈默 · 补充讯问",hold:900,motion:"still"},
+      {img:"film_interrogation_hands_v6.jpg",ambient:"interrogation",speaker:"韩川",line:"陈默。我们重新来。",hold:1100,motion:"pan-left"},
+      {img:"film_chen_close_v6.jpg",ambient:"interrogation",speaker:"陈默",line:"我姐不知道我要来自首。",hold:1600,motion:"push"},
+      {img:"portrait_lin_v6.jpg",ambient:"records",speaker:"林夏",line:"我拨了120。四秒以后，我挂了。",hold:1500,motion:"still"},
+      {img:"portrait_zhao_v7.jpg",ambient:"records",speaker:"赵序",line:"记录没被改过。被利用的是你们看记录的方式。",hold:1600,motion:"push"},
+      {img:"portrait_han_v7.jpg",ambient:"records",speaker:"韩川",line:"那就把原结论撤回来。每一段行为，重新写。",hold:1600,motion:"still"},
+      {img:"portrait_sun_v7.jpg",ambient:"records",speaker:"孙岚",line:"记录事实的时候，别替事实补主语。",hold:1700,motion:"still"},
+      {img:"film_review_room_v7.jpg",ambient:"records",caption:"完整复核：原案的一句‘人是我杀的’，被重新拆回可以分别证明的行为。",hold:1900,motion:"still"}
     ],
     replayTruth:[
       {img:"film_chen_close_v6.jpg",ambient:"interrogation",speaker:"陈默 · 第一次讯问",line:"“桌边那只黄铜书挡。”",caption:"真相标注：来自事后到场所见。",hold:1400},

@@ -10,7 +10,7 @@ const defaults=()=>({
   recordAnswers:{},lastSeenSolved:false,arrivalSeen:false,arrivalConfronted:false,
   bookstoreSeen:[],bookstoreOrder:[],sequenceSolved:false,propertyOps:[],propertySolved:false,voiceSeen:false,
   forensicSeen:[],forensicSolved:false,interrogationPins:[],secondAsked:false,
-  hintUses:0,mistakes:0,sourceReplayDone:false,
+  hintUses:0,mistakes:0,sourceReplayDone:false,witnessSeen:[],witnessNotes:{},crossExamDone:false,endingVariant:null,
   final:{initial:{person:null,evidence:[]},rescue:{person:null,evidence:[]},cover:{person:null,evidence:[]},confess:{person:null,evidence:[]},model:null},
   ending:false,filmSeen:[]
 });
@@ -26,7 +26,7 @@ function markViewed(id){if(!state.viewed.includes(id)){state.viewed.push(id);sav
 function addFact(t){if(!state.facts.includes(t)){state.facts.push(t);playFx('pen');save()}}
 function setStage(n){if(n>state.stage){state.stage=n;save()}}
 function unlocked(loc){
-  return ({hall:0,interrogation:0,scene:0,evidence:0,video:2,bookstore:4,property:5,forensic:6,review:8})[loc]<=state.stage;
+  return ({hall:0,interrogation:0,scene:0,evidence:0,video:2,witness:3,bookstore:4,property:5,forensic:6,review:8})[loc]<=state.stage;
 }
 
 /* ===== audio ===== */
@@ -103,6 +103,7 @@ const locationInfo={
   scene:['西河公寓 4-702','现场勘验与物证位置','scene_apartment_v6.jpg'],
   evidence:['物证室','原始证物与导出材料','film_records_wide.jpg'],
   video:['视频复核室','20:36—21:52记录复核','film_corridor_wide.jpg'],
+  witness:['证人补录室','冯越、钟嘉补充笔录','portrait_feng_v7.jpg'],
   bookstore:['迟夏书店','林夏手机缓存与当晚活动','film_bookstore_wide.jpg'],
   property:['物业值班室','设备终端与审计日志','film_records_detail.jpg'],
   forensic:['法医复核室','死亡过程与急救窗口','film_records_wide.jpg'],
@@ -288,31 +289,35 @@ function openEvidence(id){
 const recordIds=['cctv','payment','access','water','parcel','taxi'];
 function currentRecordIds(){return state.expert&&state.recordOrder?.length?state.recordOrder:recordIds}
 const recordQuestions={
-  cctv:{q:'这段影像直接记录到的主体是？',opts:[['person','邱承本人面部'],['card','Q-4702门卡'],['account','支付账户'],['room','室内用水']],correct:'person'},
-  payment:{q:'这条流水直接记录到的是？',opts:[['account','账户与设备完成一笔交易'],['person','邱承本人面部'],['vehicle','一辆车进入车库'],['room','4-702发生用水']],correct:'account'},
-  access:{q:'门禁系统直接记录到的是？',opts:[['card','Q-4702住户卡通过'],['person','邱承本人面部'],['account','邱承账户付款'],['room','室内有人']],correct:'card'},
-  water:{q:'水表曲线直接记录到的是？',opts:[['room','4-702发生用水'],['person','邱承本人'],['card','门卡通过'],['vehicle','网约车乘客']],correct:'room'},
-  parcel:{q:'快递柜后台直接记录到的是？',opts:[['event','7-14柜门被开启'],['person','邱承本人取件'],['card','门卡通过'],['account','手机支付']],correct:'event'},
-  taxi:{q:'网约车平台直接记录到的是？',opts:[['order','邱承账户发起订单'],['person','邱承本人乘车'],['card','住户卡通过'],['room','室内用水']],correct:'order'}
+  cctv:{q:'只写这份原件直接确认到的主体/对象',accept:['邱承','本人','人脸','面部'],legacy:'person',example:'人物或对象'},
+  payment:{q:'只写这份流水直接记录到的主体/对象',accept:['账户','手机','设备','交易'],legacy:'account',example:'账户、设备或事件'},
+  access:{q:'只写门禁系统直接识别到的主体/对象',accept:['门卡','住户卡','卡号','q-4702'],legacy:'card',example:'系统识别的对象'},
+  water:{q:'只写水表直接记录到的变化',accept:['用水','水量','18.6','水表'],legacy:'room',example:'环境变化'},
+  parcel:{q:'只写快递柜后台直接记录到的事件',accept:['柜门','开启','快递柜','7-14'],legacy:'event',example:'系统事件'},
+  taxi:{q:'只写平台直接记录到的事件/主体',accept:['订单','账户','下单','叫车'],legacy:'order',example:'账户或事件'}
 };
+function recordSolved(id){const v=state.recordAnswers[id];return v===true||v===recordQuestions[id].legacy}
+function normalizeAnswer(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,'')}
+function checkRecordKeyword(id,v){const t=normalizeAnswer(v);return recordQuestions[id].accept.some(k=>t.includes(normalizeAnswer(k)))}
 function renderVideo(){
   ambient('records');playFx('cctv');
   const ids=currentRecordIds();
-  const allCorrect=recordIds.every(id=>state.recordAnswers[id]===recordQuestions[id].correct);
+  const allCorrect=recordIds.every(recordSolved);
   $('#view').innerHTML=`<section class="video-room"><div class="room-head"><div><h1>视频与系统记录复核</h1><p>20:36—21:52 / ORIGINAL SOURCE REVIEW</p></div><span class="mono">逐条回答“这条系统究竟直接记录了什么”</span></div>
   <div class="monitor-wall">${ids.map(id=>{const e=ev(id),rq=recordQuestions[id];return `<div class="monitor"><div class="monitor-id">${e.no}</div><img src="assets/images/${e.img}" alt="${esc(e.name)}"><h3>${esc(e.name)}</h3>
     <button data-open-record="${id}">打开原件</button>
-    <div class="record-question"><p>${rq.q}</p><div class="tag-row">${rq.opts.map(([k,l])=>`<button data-record-answer="${id}:${k}" class="${state.recordAnswers[id]===k?'active':''}" ${state.viewed.includes(id)?'':'disabled'}>${l}</button>`).join('')}</div></div></div>`}).join('')}</div>
+    <div class="record-question"><p>${rq.q}</p>${recordSolved(id)?'<div class="record-locked">已完成原件对象标注</div>':`<div class="record-write"><input data-record-input="${id}" ${state.viewed.includes(id)?'':'disabled'} placeholder="${state.expert?'自行写下直接记录对象':rq.example}"><button data-record-submit="${id}" ${state.viewed.includes(id)?'':'disabled'}>登记</button></div>`}</div></div>`}).join('')}</div>
   ${allCorrect&&!state.lastSeenSolved?`<div class="video-question"><h3>现在只回答一个问题：现有材料中，最后一条直接确认邱承本人出现的记录是哪一条？</h3>
   <div class="compare-actions"><button data-last="cctv">20:36 电梯画面</button><button data-last="payment">21:18 支付</button><button data-last="taxi">21:52 叫车</button></div></div>`:''}
   ${state.stage===3&&!state.arrivalSeen?`<div class="video-question"><h3>补调另一组影像：陈默车辆与消防梯</h3><button id="openArrival">调取B2停车场 / 消防梯片段</button></div>`:''}
   </section>`;
   $$('[data-open-record]').forEach(b=>b.onclick=()=>openEvidence(b.dataset.openRecord));
-  $$('[data-record-answer]').forEach(b=>b.onclick=()=>{
-    const [id,k]=b.dataset.recordAnswer.split(':');const rq=recordQuestions[id];
-    if(k===rq.correct){state.recordAnswers[id]=k;playFx('pen');save();renderVideo()}
-    else{state.mistakes++;save();toast('原件本身并没有直接记录到这个主体。');}
+  $$('[data-record-submit]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.recordSubmit;const input=$(`[data-record-input="${id}"]`);const value=input?.value||'';
+    if(checkRecordKeyword(id,value)){state.recordAnswers[id]=true;playFx('pen');save();renderVideo()}
+    else{state.mistakes++;save();toast('把结论收窄：只写原件直接记录到的对象、账户、设备或事件。');}
   });
+  $$('[data-record-input]').forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter')$(`[data-record-submit="${i.dataset.recordInput}"]`)?.click()}));
   $$('[data-last]').forEach(b=>b.onclick=()=>{
     if(b.dataset.last==='cctv'){
       state.lastSeenSolved=true;setStage(3);addFact('20:36电梯画面是现有材料中最后一条直接确认邱承面部的记录。');save();
@@ -322,6 +327,17 @@ function renderVideo(){
   $('#openArrival')?.addEventListener('click',()=>{
     state.arrivalSeen=true;markViewed('arrival');save();playFx('elevator');openEvidence('arrival');renderVideo();
   });
+}
+
+/* ===== witness follow-up ===== */
+function renderWitness(){
+  ambient('records');
+  const w=[
+    {id:'feng',name:'冯越',role:'西河公寓夜班保安',portrait:'portrait_feng_v7.jpg',q:'21:20—21:30，你一直在门岗吗？',a:'没有。我去东门雨棚下抽了根烟，几分钟。那段时间谁拿卡进门，我只能看系统记录，没看清脸。',note:'原笔录把“卡通过”写成了“住户本人返回”，但冯越本人并未完成面部确认。'},
+    {id:'zhong',name:'钟嘉',role:'快递员',portrait:'portrait_zhong_v7.jpg',q:'21:38，你看见邱承取件了吗？',a:'没有。我在补另一排柜，只听到7-14号柜的提示音。后来笔录里写成“邱承取件”，我当时没注意主语是谁。',note:'他能证明柜门在21:38开启，却不能证明开柜者身份。'}
+  ];
+  $('#view').innerHTML=`<section class="witness-room"><div class="room-head"><div><h1>证人补录室</h1><p>SUPPLEMENTAL STATEMENTS / 不把推测写成目击</p></div><span class="mono">可选支线 · 不阻断主线</span></div><div class="witness-grid">${w.map(x=>`<article class="witness-card"><img src="assets/images/${x.portrait}" alt="${x.name}"><div><div class="mono">${x.role}</div><h2>${x.name}</h2><p class="witness-q">${x.q}</p>${state.witnessSeen.includes(x.id)?`<blockquote>${x.a}</blockquote><p>${x.note}</p>`:`<button data-witness="${x.id}" class="primary">开始补录</button>`}</div></article>`).join('')}</div>${state.witnessSeen.length===2?'<div class="witness-summary"><b>两份补录已经完成。</b><p>它们没有改变电子记录本身，只缩小了这些记录能够直接证明的范围。</p></div>':''}</section>`;
+  $$('[data-witness]').forEach(b=>b.onclick=()=>{const id=b.dataset.witness;if(!state.witnessSeen.includes(id))state.witnessSeen.push(id);state.witnessNotes[id]=true;save();playFx('rec');if(state.witnessSeen.length===2&&!state.filmSeen.includes('witnessBoundary'))showFilm('witnessBoundary');else renderWitness();});
 }
 
 /* ===== bookstore ===== */
@@ -413,7 +429,7 @@ function renderReview(){
     return `<div class="responsibility-card"><h3>${d.title}</h3><div class="mono">主要行为人</div><div class="person-stamps">${d.people.map(([v,l])=>`<button data-person-pick="${id}:${v}" class="${s.person===v?'active':''}">${l}</button>`).join('')}</div>
       <div class="mono" style="margin-top:14px">挂接两份关键材料</div><div class="evidence-picks">${d.evidence.map(eid=>`<button data-ev-pick="${id}:${eid}" class="${s.evidence.includes(eid)?'active':''}">${ev(eid).no} ${ev(eid).name}</button>`).join('')}</div></div>`;
   }).join('');
-  $('#view').innerHTML=`<section class="review-room"><div class="review-hero"><img src="assets/images/film_review_meeting.jpg" alt="案件复核会议"><div><div class="mono">CASE REVIEW MEETING / FINAL</div><h1>案件复核会议</h1><p>把已经确认的事实重新放回同一张桌面。终局只接受能够解释全部记录的责任链。</p></div></div><div class="review-table">
+  $('#view').innerHTML=`<section class="review-room"><div class="review-hero"><img src="assets/images/film_review_room_v7.jpg" alt="案件复核会议"><div><div class="mono">CASE REVIEW MEETING / FINAL</div><h1>案件复核会议</h1><p>把已经确认的事实重新放回同一张桌面。终局只接受能够解释全部记录的责任链。</p></div></div><div class="review-table">
   <div class="responsibility-grid">${cards}</div>
   <div class="review-submit"><h3>案件模型</h3><div class="model-options">
     <button data-model="single" class="${state.final.model==='single'?'active':''}">陈默单独故意杀人</button>
@@ -434,24 +450,16 @@ function submitFinal(){
   if(state.final.model!=='layered')ok=false;
   if(!ok){toast('复核意见仍有一段行为无法被当前材料解释。');return}
   state.ending=true;meta.completed=true;localStorage.setItem(META,JSON.stringify(meta));save();
-  showFilm('ending',renderEnding);
+  const fullCut=state.voiceSeen&&state.witnessSeen.includes('feng')&&state.witnessSeen.includes('zhong');
+  showFilm(fullCut?'endingComplete':'ending',renderEnding);
 }
 function renderEnding(){
   ambient('records');
-  const complete=state.voiceSeen;
-  $('#view').innerHTML=`<section class="ending-page"><div class="ending-sheet"><div class="mono">SUPPLEMENTAL REVIEW / CLOSED</div><h1>${complete?'结局 · 第二份口供':'结局 · 分层责任'}</h1>
-  <p>原“陈默单独故意杀人”移送意见被撤回。案件重新拆分为最初伤害、救助中断、事后时间线设计与虚假自首。</p>
-  ${complete?'<p>你还把E18的11秒自动录音纳入了卷宗。它没有改变最初伤害发生在谁手里，但使“为什么急救被中断”的决策过程获得了更完整的证据。</p>':''}
-  <div class="outcomes">
-    <div class="outcome"><b>陈默</b><small>虚假自首另案审查</small><p>主动认罪不再被当作最初行为的直接证明。</p></div>
-    <div class="outcome"><b>林夏</b><small>初始伤害与救助行为复核</small><p>最初冲突与之后的救助选择分别评价。</p></div>
-    <div class="outcome"><b>赵序</b><small>事后掩饰行为复核</small><p>没有篡改数据库，但其利用多系统记录形成错误身份时间线的行为被固定。</p></div>
-    <div class="outcome"><b>韩川</b><small>原案质量复盘</small><p>真实记录被错误地写成了“本人持续活动”。</p></div>
-  </div>
-  <p class="replay-note">${state.expert?'独立复核完成：本轮未显示程序清单与提示，电子记录顺序也经过打乱。':'通关后可从首页进入“独立复核二周目”，在无程序清单、无提示且记录顺序打乱的条件下重新证明案件。'}</p><div class="review-metrics"><span>主动提示：${state.hintUses}</span><span>错误判断：${state.mistakes}</span><span>E18补充录音：${state.voiceSeen?'已入卷':'未入卷'}</span><span>模式：${state.expert?'独立复核':'程序核验'}</span></div><div class="ending-actions"><button id="truthReplay" class="primary">重看第一份口供 · 真相标注</button><button id="sourceReplay">供述来源复盘</button><button id="restart">重新开始案件</button></div></div></section>`;
-  $('#truthReplay').onclick=()=>showFilm('replayTruth');
-  $('#sourceReplay').onclick=sourceReplay;
-  $('#restart').onclick=()=>{reset();location.reload()};
+  const witnessComplete=state.witnessSeen.includes('feng')&&state.witnessSeen.includes('zhong');
+  const complete=state.voiceSeen&&witnessComplete;
+  state.endingVariant=complete?'complete':(state.voiceSeen||witnessComplete?'expanded':'basic');save();
+  $('#view').innerHTML=`<section class="ending-page"><div class="ending-sheet"><div class="mono">SUPPLEMENTAL REVIEW / CLOSED</div><h1>${complete?'结局 · 完整复核':state.endingVariant==='expanded'?'结局 · 第二份口供':'结局 · 分层责任'}</h1><p>原“陈默单独故意杀人”移送意见被撤回。案件重新拆分为最初伤害、救助中断、事后时间线设计与虚假自首。</p>${state.voiceSeen?'<p>E18的11秒自动录音被纳入卷宗，使“为什么急救被中断”的决策过程获得了更完整的证据。</p>':''}${witnessComplete?'<p>冯越与钟嘉的补录也进入附件：他们分别确认“看见系统记录”与“亲眼看见本人”不是同一回事。这两份证言没有改变真相，却把原案最容易被忽略的主语错误固定了下来。</p>':''}<div class="outcomes"><div class="outcome"><b>陈默</b><small>虚假自首另案审查</small><p>主动认罪不再被当作最初行为的直接证明。</p></div><div class="outcome"><b>林夏</b><small>初始伤害与救助行为复核</small><p>最初冲突与之后的救助选择分别评价。</p></div><div class="outcome"><b>赵序</b><small>事后掩饰行为复核</small><p>没有篡改数据库，但其利用多系统记录形成错误身份时间线的行为被固定。</p></div><div class="outcome"><b>韩川</b><small>原案质量复盘</small><p>真实记录被错误地写成了“本人持续活动”。</p></div></div><p class="replay-note">${state.expert?'独立复核完成：本轮未显示程序清单与提示，电子记录顺序也经过打乱。':'通关后可从首页进入“独立复核二周目”。如果本轮没有完成E18或两名外围证人的补录，二周目还能补齐“完整复核”结局。'}</p><div class="review-metrics"><span>主动提示：${state.hintUses}</span><span>错误判断：${state.mistakes}</span><span>E18：${state.voiceSeen?'已入卷':'未入卷'}</span><span>外围证人：${state.witnessSeen.length}/2</span><span>模式：${state.expert?'独立复核':'程序核验'}</span></div><div class="ending-actions"><button id="truthReplay" class="primary">重看第一份口供 · 真相标注</button><button id="sourceReplay">供述来源复盘</button><button id="crossExam">证词边界复盘</button><button id="restart">重新开始案件</button></div></div></section>`;
+  $('#truthReplay').onclick=()=>showFilm('replayTruth');$('#sourceReplay').onclick=sourceReplay;$('#crossExam').onclick=crossExamReplay;$('#restart').onclick=()=>{reset();location.reload()};
 }
 
 
@@ -473,6 +481,13 @@ function sourceReplay(){
   };
 }
 
+function crossExamReplay(){
+  const qs=[['feng','冯越：“21:24有人刷卡进入。”','系统记录/间接信息'],['zhong','钟嘉：“21:38我听见7-14柜门提示音。”','直接听见/直接感知'],['han','韩川：“21:18之后邱承仍在活动。”','推论/解释'],['sun','孙岚：“陈默回答第二层很快。”','直接观察']];
+  const opts=['直接观察','直接听见/直接感知','系统记录/间接信息','推论/解释'];
+  openModal(`<div class="doc-meta"><div class="mono">POST-CASE / STATEMENT BOUNDARY</div><h2>证词边界复盘</h2><p>把“看见、听见、系统记录、后来推论”重新分开。这一关只在结案后开放。</p><div class="source-replay">${qs.map(([id,text])=>`<div class="source-row"><blockquote>${text}</blockquote><select data-cross="${id}"><option value="">判断这句话的证据层级</option>${opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`).join('')}</div><button id="checkCrossExam" class="primary">提交复盘</button></div>`);
+  $('#checkCrossExam').onclick=()=>{let ok=true;for(const [id,,ans] of qs){if($(`[data-cross="${id}"]`).value!==ans)ok=false}if(ok){state.crossExamDone=true;save();playFx('stamp');openModal(`<div class="doc-meta"><h2>证词边界复盘完成</h2><p>同一句中文里的主语，可能来自亲眼所见，也可能只是记录人员后来补上的解释。你已经把四种证据层级重新拆开。</p><p class="mono">STATEMENT BOUNDARY / CLOSED</p></div>`)}else{state.mistakes++;save();toast('至少有一句话把“观察”与“解释”混在了一起。')}};
+}
+
 /* ===== folder / people ===== */
 function openFolder(tab='evidence'){$('#folder').classList.remove('hidden');renderFolder(tab);playFx('paper')}
 function renderFolder(tab){
@@ -487,7 +502,7 @@ function renderFolder(tab){
     const entries=Object.entries(D.people);
     const core=entries.filter(([id])=>['chen','lin','zhao','qiu','han','sun'].includes(id));
     const witness=entries.filter(([id])=>['feng','zhong'].includes(id));
-    const renderPerson=([id,p])=>`<div class="person-file"><img class="person-portrait" src="assets/images/${p.portrait}" alt="${p.name}"><div class="person-copy"><b>${p.name}</b><small>${p.role}</small><p>${p.public}</p><p class="relation">${p.relation}</p>${p.mid&&state.stage>=p.midStage?`<p class="mid-note">${p.mid}</p>`:''}${state.stage>=8?`<p class="later-note">${p.later}</p>`:''}</div></div>`;
+    const renderPerson=([id,p])=>`<div class="person-file"><img class="person-portrait" src="assets/images/${p.portrait}" alt="${p.name}"><div class="person-copy"><b>${p.name}</b><small>${p.role}</small><p>${p.public}</p><p class="relation">${p.relation}</p>${p.mid&&state.stage>=p.midStage?`<p class="mid-note">${p.mid}</p>`:''}${p.moment&&state.stage>=Math.min(8,(p.midStage||0)+1)?`<p class="moment-note"><b>补录片段：</b>${p.moment}</p>`:''}${state.stage>=8?`<p class="later-note">${p.later}</p>`:''}</div></div>`;
     body.innerHTML=`<h3 class="folder-group-title">核心人物</h3><div class="people-file">${core.map(renderPerson).join('')}</div><h3 class="folder-group-title">外围证人</h3><div class="people-file witness-file">${witness.map(renderPerson).join('')}</div>`;
   }
 }
@@ -524,6 +539,7 @@ function render(){
   else if(state.location==='scene')renderScene();
   else if(state.location==='evidence')renderEvidence();
   else if(state.location==='video')renderVideo();
+  else if(state.location==='witness')renderWitness();
   else if(state.location==='bookstore')renderBookstore();
   else if(state.location==='property')renderProperty();
   else if(state.location==='forensic')renderForensic();

@@ -118,7 +118,7 @@ button{border:1px solid #59605d;background:#1b2021;color:#e6e5df;padding:9px 13p
 .video-room .monitor:hover{transform:translateY(-2px);border-color:#6e7772}
 .review-room{background:
   linear-gradient(#0c0f10cc,#0c0f10e8),
-  url("assets/images/film_review_meeting.jpg") center/cover fixed}
+  url("assets/images/film_review_room_v7.jpg") center/cover fixed}
 .theatre .film-line,.theatre .film-caption,.theatre .film-speaker{transition:opacity .25s ease,transform .25s ease}
 .theatre.shot-enter .film-line,.theatre.shot-enter .film-caption,.theatre.shot-enter .film-speaker{animation:subtitleIn .45s ease both}
 @keyframes subtitleIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -158,3 +158,6 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 @media(max-width:760px){
  .scene-detail{grid-template-columns:1fr}.interrogation-console{width:auto;left:10px;right:10px}.interrogation-evidence-row button{min-width:0;flex:1 1 190px}.op-grid{grid-template-columns:repeat(3,1fr)}.timeline-slots{grid-template-columns:1fr}.source-row{grid-template-columns:1fr}.scene-compare img{min-height:180px}
 }
+
+/* v7: people depth, free-form evidence reading, final review polish */
+.record-write{display:flex;gap:8px;align-items:center;margin-top:10px}.record-write input{flex:1;min-width:0;background:#0d1113;border:1px solid #475057;color:#e9e6dc;padding:10px 11px;border-radius:4px;font:inherit}.record-write input:focus{outline:1px solid #8f7761;border-color:#8f7761}.record-locked{margin-top:10px;padding:9px 10px;border-left:3px solid #748c72;background:#141b18;color:#cad7c8;font-size:13px}.witness-room{max-width:1220px;margin:0 auto;padding:26px}.witness-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:20px}.witness-card{display:grid;grid-template-columns:210px 1fr;background:#15191b;border:1px solid #30383c;min-height:300px;overflow:hidden}.witness-card img{width:100%;height:100%;object-fit:cover;filter:saturate(.78) contrast(1.05)}.witness-card>div{padding:22px}.witness-card h2{font-size:28px;margin:6px 0 18px}.witness-card blockquote{margin:14px 0;padding:14px 16px;border-left:3px solid #8b4f46;background:#0d1011;color:#eee9de;line-height:1.8}.witness-q{color:#b9b4a7;font-size:15px}.witness-summary{margin-top:18px;padding:16px 18px;background:#191d1d;border:1px solid #39403d}.moment-note{margin-top:10px;padding:10px 12px;background:#111718;border-left:3px solid #6d7980;color:#cfd2cf;line-height:1.65}.moment-note b{color:#e6e0d2}.review-hero img{object-position:center 52%}.review-metrics{display:flex;flex-wrap:wrap;gap:8px}.review-metrics span{background:#15191b;border:1px solid #30383c;padding:7px 10px}.ending-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}@media(max-width:760px){.witness-grid{grid-template-columns:1fr}.witness-card{grid-template-columns:120px 1fr;min-height:230px}.witness-card>div{padding:15px}.record-write{flex-direction:column;align-items:stretch}}
