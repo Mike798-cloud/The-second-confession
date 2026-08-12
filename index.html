@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0b0d0e">
 <title>第二份口供｜第17号案件</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="paywall.css?v=1.0.0">
 </head>
 <body>
 <div id="boot" class="boot">
@@ -41,7 +42,6 @@
     </aside>
   </main>
 </div>
-
 <div id="app" class="app hidden">
   <header class="hud">
     <button class="back-location" data-action="hall">← 返回走廊</button>
@@ -49,20 +49,19 @@
     <div class="hud-actions">
       <button data-action="folder">案件袋</button>
       <button data-action="hint">提示</button>
+      <button type="button" id="supportBtn" class="support-entry" aria-label="支持作者 1元">支持作者 1元</button>
       <button data-action="sound" id="soundBtn">声音：开</button>
       <button data-action="tools">工具</button>
     </div>
   </header>
   <main id="view" class="view"></main>
 </div>
-
 <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
   <div class="modal-card">
     <button class="modal-close" data-action="close-modal">×</button>
     <div id="modalBody"></div>
   </div>
 </div>
-
 <div id="folder" class="folder-overlay hidden" role="dialog" aria-modal="true">
   <div class="folder-shell">
     <button class="folder-close" data-action="folder-close">关闭卷宗</button>
@@ -74,7 +73,6 @@
     <div id="folderBody"></div>
   </div>
 </div>
-
 <div id="hintPanel" class="hint-panel hidden" role="dialog" aria-modal="true">
   <div class="hint-card">
     <button data-action="hint-close">×</button>
@@ -87,7 +85,6 @@
     </div>
   </div>
 </div>
-
 <div id="theatre" class="theatre hidden" role="dialog" aria-modal="true">
   <div class="film-grain"></div>
   <div class="letterbox top"></div>
@@ -102,10 +99,11 @@
   </div>
   <button id="filmAdvance" class="film-advance" aria-label="继续">继续</button>
 </div>
-
 <div id="toast" class="toast hidden"></div>
 
 <script src="data.js"></script>
+<script src="paywall.js?v=1.0.0"></script>
+<script src="assets/js/stability-fix.js?v=1.0.0"></script>
 <script src="app.js"></script>
 </body>
 </html>
