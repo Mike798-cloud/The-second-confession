@@ -1,294 +1,478 @@
 (()=>{
 'use strict';
-const D=window.CASE_DATA;
-const SAVE='second_confession_v3', META='second_confession_meta_v3';
-const LEGACY=['second_confession_v2','second_confession_v1'];
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const D=window.CASE17;
+const SAVE='second_confession_film_v4',META='second_confession_film_meta_v4';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const uniq=a=>[...new Set(a||[])];
-const ev=id=>D.evidence.find(x=>x[3]===id);
-const puzzle=id=>D.puzzles.find(x=>x.id===id);
-const defaultState=()=>({
-  version:3, stage:0, solved:[], viewed:[], sceneChecked:[], asked:[], marked:[],
-  tab:'case', currentInterrogation:'why', theatreSeen:[], hintCount:{}, failures:{}, mode:'guided', sound:true,
-  ending:null, recordTags:{}, intakeChecks:{}, compareAnswer:'', auditAnswer:'', arrivalAnswer:'',
-  orderAnswer:'', rescueAnswer:'', knowledge:{}, responsibility:{}, finalRoles:{}, finalEvidence:{},
-  finalModel:'', noteText:'', tabSeen:['case'], evFilter:'all', transitioned:false, replaySeed:Math.random()
+const defaults=()=>({
+  stage:0,location:'hall',asked:[],scene:[],viewed:[],facts:[],hintLevel:{},sound:true,
+  transferSubmitted:false,drawerResolved:false,tags:{},lastSeenSolved:false,arrivalSeen:false,arrivalConfronted:false,
+  bookstoreSeen:[],sequenceSolved:false,propertySolved:false,voiceSeen:false,forensicSeen:[],forensicSolved:false,
+  secondAsked:false,final:{initial:{person:null,evidence:[]},rescue:{person:null,evidence:[]},cover:{person:null,evidence:[]},confess:{person:null,evidence:[]},model:null},
+  ending:false,filmSeen:[]
 });
-let state=defaultState();
-let meta={completed:false,bestScore:0,plays:0};
+let state=defaults();
+let meta={completed:false};
 try{meta={...meta,...JSON.parse(localStorage.getItem(META)||'{}')}}catch(e){}
-
-const evidenceStage={confession:0,brass:0,drawer:1,cctv:2,phone:2,payment:2,card:2,access:2,water:3,parcel:3,taxi:3,zhaolog:4,arrival:4,shoe:4,message:5,call:5,autopsy:5,voice:7};
-const tabDefs=[['case','卷宗'],['interrogation','讯问'],['scene','现场'],['people','关系人'],['evidence','物证'],['timeline','时间轴'],['reason','核验台'],['final','复核会议']];
-const tabStage={case:0,interrogation:0,scene:0,evidence:0,reason:0,people:2,timeline:2,final:7};
-
-function normalize(x){
-  const n={...defaultState(),...(x||{})};
-  ['solved','viewed','sceneChecked','asked','marked','theatreSeen','tabSeen'].forEach(k=>n[k]=uniq(n[k]));
-  ['hintCount','failures','recordTags','intakeChecks','knowledge','responsibility','finalRoles','finalEvidence'].forEach(k=>n[k]=n[k]||{});
-  if(!['guided','independent'].includes(n.mode))n.mode='guided';
-  n.version=3; return n;
-}
-function migrateLegacy(raw){
-  const old=normalize(raw); old.version=3;
-  // 旧存档保留已完成推理与已阅证物；新版界面状态重新建立。
-  old.stage=stageFromSolved(old.solved);
-  old.transitioned=old.solved.includes('P02');
-  return old;
-}
-function save(){localStorage.setItem(SAVE,JSON.stringify(state));}
-function saveMeta(){localStorage.setItem(META,JSON.stringify(meta));}
-function load(){
-  try{const raw=localStorage.getItem(SAVE); if(raw){state=normalize(JSON.parse(raw)); return true;}}
-  catch(e){console.warn('save parse',e)}
-  for(const key of LEGACY){try{const raw=localStorage.getItem(key);if(raw){state=migrateLegacy(JSON.parse(raw));save();return true}}catch(e){}}
-  return false;
-}
-function reset(mode='guided'){localStorage.removeItem(SAVE);state=defaultState();state.mode=mode;meta.plays=(meta.plays||0)+1;saveMeta();save()}
-function hasSave(){return !!(localStorage.getItem(SAVE)||LEGACY.some(k=>localStorage.getItem(k)))}
-
-/* ---------- AUDIO ---------- */
-const audio={started:false,current:null,currentKey:'',loops:{},sfx:{}};
-function initAudio(){if(audio.started)return;audio.started=true;
-  const mk=(src,loop=false,vol=.12)=>{const a=new Audio(src);a.loop=loop;a.volume=vol;a.preload='auto';return a};
-  audio.loops.interrogation=mk('assets/audio/interrogation_room.wav',true,.10);
-  audio.loops.rain=mk('assets/audio/rain_window.wav',true,.09);
-  audio.loops.records=mk('assets/audio/records_room.wav',true,.075);
-  audio.sfx.rec=mk('assets/audio/rec_click.wav',false,.24);
-  audio.sfx.paper=mk('assets/audio/paper_rustle.wav',false,.20);
-  audio.sfx.stamp=mk('assets/audio/stamp.wav',false,.25);
-  audio.sfx.door=mk('assets/audio/door.wav',false,.20);
-  audio.sfx.phone=mk('assets/audio/phone_beep.wav',false,.18);
-  audio.sfx.printer=mk('assets/audio/printer.wav',false,.18);
-  audio.sfx.low=mk('assets/audio/transition_low.wav',false,.22);
-}
-function playSfx(k){if(!state.sound)return;initAudio();const a=audio.sfx[k];if(!a)return;try{a.currentTime=0;a.play().catch(()=>{})}catch(e){}}
-function ambientKey(){if(!state.sound)return'';if(!$('#theatre').classList.contains('hidden'))return'interrogation';if(state.tab==='interrogation')return'interrogation';if(state.tab==='scene')return'rain';return'records'}
-function syncAmbient(){initAudio();const key=ambientKey();if(key===audio.currentKey)return;if(audio.current){audio.current.pause();audio.current.currentTime=0}audio.currentKey=key;audio.current=key?audio.loops[key]:null;if(audio.current&&state.sound)audio.current.play().catch(()=>{})}
-function toggleSound(){state.sound=!state.sound;save();if(!state.sound&&audio.current){audio.current.pause();audio.current=null;audio.currentKey=''}renderChrome();syncAmbient()}
-
-/* ---------- STATE / PROGRESSION ---------- */
-function stageFromSolved(s){
-  const has=(...ids)=>ids.every(id=>s.includes(id));
-  if(has('P13','P14'))return 7;
-  if(has('P11','P12'))return 6;
-  if(has('P09','P10'))return 5;
-  if(has('P06','P07','P08'))return 4;
-  if(has('P03','P04','P05'))return 3;
-  if(has('P02'))return 2;
-  if(has('P01'))return 1;
-  return 0;
-}
-function updateStage(){state.stage=stageFromSolved(state.solved);save()}
-function currentPuzzle(){return D.puzzles.find(p=>!state.solved.includes(p.id)&&p.stage<=state.stage)}
-function isEvAvailable(id){return (evidenceStage[id]??99)<=state.stage}
-function unlocked(tab){if(tab==='final')return state.stage>=7;return state.stage>=(tabStage[tab]??0)}
-function solve(id,{silent=false}={}){
-  if(state.solved.includes(id))return;
-  state.solved.push(id);updateStage();save();
-  if(!silent)playSfx('stamp');
-  const after=()=>{render();syncAmbient()};
-  if(id==='P01')return showTheatre('intakePass',after);
-  if(id==='P02')return showTheatre('drawer',()=>showTransition('移送暂缓','第17号案件 · 补充复核',()=>{state.transitioned=true;save();after()}));
-  if(id==='P08')return showTheatre('lastSeen',after);
-  if(id==='P09')return showTheatre('audit',after);
-  if(id==='P12')return showTheatre('rescue',after);
-  if(id==='P13')return showTheatre('second',after);
-  after();
-}
-function fail(id,msg='这项判断还不能由当前材料支持。'){state.failures[id]=(state.failures[id]||0)+1;save();toast(msg,'bad')}
-function score(){const fails=Object.values(state.failures).reduce((a,b)=>a+(+b||0),0);const hints=Object.values(state.hintCount).reduce((a,b)=>a+(+b||0),0);return Math.max(0,Math.round(100-fails*2-hints*4+(state.mode==='independent'?6:0)))}
-
-/* ---------- CHROME ---------- */
-function chapterName(){return D.chapters[Math.min(state.stage,D.chapters.length-1)]}
-function procedureText(){
-  if(state.mode==='independent')return'';
-  const texts=[
-    '程序：核对第一次讯问、现场与核心物证。',
-    '程序：完成现场勘验册最后一项定位复核。',
-    '程序：逐条复查20:36—21:24记录的来源与证明层级。',
-    '程序：完成21:31—21:52记录复查，并形成批次意见。',
-    '程序：核对物业设备访问与相关人员到场时间。',
-    '程序：复核伤后处置记录与人员先后顺序。',
-    '程序：整理供述细节来源与行为发生顺序。',
-    '程序：召开案件复核会议。'
-  ]; return texts[state.stage]||'';
-}
-function newDot(tab){return unlocked(tab)&&!state.tabSeen.includes(tab)?'<i class="new-dot" aria-label="新内容"></i>':''}
-function renderChrome(){
-  $('#casebarTitle').textContent=state.transitioned?'荔州市公安局 · 第17号案件补充复核':'荔州市公安局 · 第17号案件移送核验';
-  $('#casebarSub').textContent=state.transitioned?'CASE 17 / SUPPLEMENTAL REVIEW':'CASE 17 / TRANSFER CHECK';
-  $('#chapterLabel').textContent=chapterName();
-  $('#progressLabel').textContent=`材料 ${state.solved.length} / 14`;
-  $('#soundToggle').textContent=`声音：${state.sound?'开':'关'}`;$('#soundToggle').setAttribute('aria-pressed',String(state.sound));
-  $('#procedure').textContent=procedureText();$('#procedure').classList.toggle('hidden',!procedureText());
-  const visibleTabs=tabDefs.filter(([id])=>unlocked(id));$('#tabs').innerHTML=visibleTabs.map(([id,label],i)=>`<button class="tab ${state.tab===id?'active':''}" data-tab="${id}" data-index="${String(i+1).padStart(2,'0')}">${label}${newDot(id)}</button>`).join('');
-  $$('[data-tab]').forEach(b=>b.onclick=()=>{if(!unlocked(b.dataset.tab))return;state.tab=b.dataset.tab;state.tabSeen=uniq([...state.tabSeen,state.tab]);save();render();});
-  syncAmbient();
-}
-function render(){renderChrome();const m={case:renderCase,interrogation:renderInterrogation,scene:renderScene,people:renderPeople,evidence:renderEvidence,timeline:renderTimeline,reason:renderReason,final:renderFinal};(m[state.tab]||renderCase)()}
-
-/* ---------- CASE VIEW ---------- */
-function renderCase(){
-  const pre=!state.solved.includes('P02');
-  const facts=state.solved.map(id=>puzzle(id)?.fact).filter(Boolean);
-  $('#view').innerHTML=pre?`
-    <section class="case-folder transfer-view">
-      <div class="folder-stamp neutral">待移送</div><div class="doc-kicker">CASE 17 / TRANSFER MATERIAL</div>
-      <h2>案件移送卷</h2><p class="doc-sub">原案材料核验中</p>
-      <div class="case-grid"><dl><dt>死者</dt><dd>邱承 / 38岁</dd><dt>到案人员</dt><dd>陈默 / 主动投案</dd><dt>地点</dt><dd>西河公寓B座4-702</dd></dl><dl><dt>拟移送事实</dt><dd>故意伤害致死相关材料</dd><dt>卷宗页数</dt><dd>214页 + 电子附件</dd><dt>当前程序</dt><dd>${state.stage===0?'基础一致性核验':'现场定位补充核验'}</dd></dl></div>
-      <div class="case-photo"><img src="assets/images/scene_apartment.jpg" alt="4-702现场环境重建"></div>
-      <div class="transfer-checks"><b>随卷核验</b><span class="${state.asked.includes('weapon')?'done':''}">讯问片段</span><span class="${state.sceneChecked.includes('brass')?'done':''}">现场材料</span><span class="${state.viewed.includes('brass')?'done':''}">物证登记</span></div>
-    </section>`:`
-    <section class="case-folder review-view">
-      <div class="folder-stamp alert">补充复核</div><div class="doc-kicker">CASE 17 / SUPPLEMENTAL REVIEW</div>
-      <h2>第17号案件</h2><p class="doc-sub">原移送程序已暂缓</p>
-      <div class="case-grid"><dl><dt>死者</dt><dd>邱承 / 38岁</dd><dt>原到案人员</dt><dd>陈默</dd><dt>地点</dt><dd>西河公寓B座4-702</dd></dl><dl><dt>当前材料阶段</dt><dd>${esc(chapterName())}</dd><dt>已确认事实</dt><dd>${facts.length}项</dd><dt>复核原则</dt><dd>原始材料与推论分开记录</dd></dl></div>
-      <div class="confirmed-facts">${facts.length?facts.map((f,i)=>`<article><span>${String(i+1).padStart(2,'0')}</span><p>${esc(f)}</p></article>`).join(''):'<p class="muted">尚未形成新的复核事实。</p>'}</div>
-    </section>`;
+function save(){localStorage.setItem(SAVE,JSON.stringify(state))}
+function load(){try{const x=JSON.parse(localStorage.getItem(SAVE)||'null');if(x){state={...defaults(),...x,final:{...defaults().final,...(x.final||{})}};return true}}catch(e){}return false}
+function reset(){state=defaults();save()}
+function toast(t){const n=$('#toast');n.textContent=t;n.classList.remove('hidden');clearTimeout(toast.t);toast.t=setTimeout(()=>n.classList.add('hidden'),1800)}
+function ev(id){return D.evidence[id]}
+function markViewed(id){if(!state.viewed.includes(id)){state.viewed.push(id);save()}}
+function addFact(t){if(!state.facts.includes(t)){state.facts.push(t);save()}}
+function setStage(n){if(n>state.stage){state.stage=n;save()}}
+function unlocked(loc){
+  return ({hall:0,interrogation:0,scene:0,evidence:0,video:2,bookstore:4,property:5,forensic:6,review:8})[loc]<=state.stage;
 }
 
-/* ---------- INTERROGATION ---------- */
-function availableQuestions(){return D.interrogation.filter(q=>q.stage<=state.stage)}
-function renderInterrogation(){
-  let id=state.currentInterrogation||availableQuestions()[0].id;let q=availableQuestions().find(x=>x.id===id)||availableQuestions()[0];state.currentInterrogation=q.id;
-  const asked=state.asked.includes(q.id);
-  $('#view').innerHTML=`<section class="interrogation-room">
-    <div class="interrogation-monitor"><img src="assets/images/scene_interrogation.jpg" alt="讯问室环境重建"><div class="scanline"></div><div class="cam-hud"><span class="rec">● REC</span><span>ROOM 03 / CAM B</span><span>${asked?'PLAY':'PAUSE'}</span></div>
-      <div class="caption"><b>${esc(q.q)}</b><p>${asked?esc(q.a).replace(/\n/g,'<br>'):'选择右侧问题播放对应讯问片段。'}</p>${asked?`<small>行为记录：${esc(q.behaviour)}</small>`:''}</div>
+/* ===== audio ===== */
+const audio={ready:false,loops:{},fx:{},current:null,key:''};
+function initAudio(){
+  if(audio.ready)return;
+  const loop=(file,vol)=>{const a=new Audio('assets/audio/'+file);a.loop=true;a.volume=vol;return a};
+  const fx=(file,vol)=>{const a=new Audio('assets/audio/'+file);a.volume=vol;return a};
+  audio.loops={interrogation:loop('interrogation_room.wav',.22),rain:loop('rain_window.wav',.18),records:loop('records_room.wav',.16)};
+  audio.fx={door:fx('door.wav',.65),paper:fx('paper_rustle.wav',.55),phone:fx('phone_beep.wav',.62),printer:fx('printer.wav',.55),rec:fx('rec_click.wav',.55),stamp:fx('stamp.wav',.62),transition:fx('transition_low.wav',.55)};
+  audio.ready=true;
+}
+function playFx(k){if(!state.sound)return;initAudio();const a=audio.fx[k];if(a){try{a.currentTime=0;a.play().catch(()=>{})}catch(e){}}}
+function ambient(k){if(!state.sound){stopAmbient();return}initAudio();if(audio.key===k)return;stopAmbient();audio.key=k||'';audio.current=k?audio.loops[k]:null;if(audio.current)audio.current.play().catch(()=>{})}
+function stopAmbient(){if(audio.current){audio.current.pause();audio.current.currentTime=0}audio.current=null;audio.key=''}
+function toggleSound(){state.sound=!state.sound;save();$('#soundBtn').textContent='声音：'+(state.sound?'开':'关');if(!state.sound)stopAmbient();else syncAmbient()}
+function syncAmbient(){
+  if(!$('#theatre').classList.contains('hidden'))return;
+  if(state.location==='interrogation')ambient('interrogation');
+  else if(['scene','bookstore'].includes(state.location))ambient('rain');
+  else ambient('records');
+}
+
+/* ===== film ===== */
+let film={key:null,shots:[],i:0,done:null,timer:null};
+function showFilm(key,done){
+  const shots=D.films[key]||[];if(!shots.length){done?.();return}
+  film={key,shots,i:0,done,timer:null};
+  $('#theatre').classList.remove('hidden');$('#app').classList.add('cinema');
+  stopAmbient();renderShot();
+}
+function renderShot(){
+  clearTimeout(film.timer);
+  const s=film.shots[film.i];
+  const img=$('#filmImg');img.style.animation='none';void img.offsetWidth;img.style.animation='';
+  img.src=s.img.startsWith('ev_')?'assets/images/'+s.img:'assets/images/'+s.img;
+  $('#filmHud').textContent=s.hud||'';
+  $('#filmCaption').textContent=s.caption||'';
+  $('#filmSpeaker').textContent=s.speaker||'';
+  $('#filmLine').textContent=s.line||'';
+  const st=$('#filmStamp');st.textContent=s.stamp||'';st.classList.toggle('hidden',!s.stamp);
+  if(s.ambient)ambient(s.ambient);
+  if(s.sfx)playFx(s.sfx);
+  film.timer=setTimeout(()=>advanceFilm(),Math.max(1800,(s.hold||900)+900));
+}
+function advanceFilm(){
+  clearTimeout(film.timer);
+  if(film.i<film.shots.length-1){film.i++;renderShot();return}
+  $('#theatre').classList.add('hidden');$('#app').classList.remove('cinema');stopAmbient();
+  if(!state.filmSeen.includes(film.key)){state.filmSeen.push(film.key);save()}
+  const done=film.done;film={key:null,shots:[],i:0,done:null,timer:null};done?.();render();
+}
+$('#filmAdvance').onclick=advanceFilm;
+$('#theatre').addEventListener('click',e=>{if(e.target.id!=='filmAdvance')advanceFilm()});
+
+/* ===== boot ===== */
+function enter(newGame=false){
+  if(newGame)reset();else load();
+  $('#boot').classList.add('hidden');$('#app').classList.remove('hidden');
+  $('#soundBtn').textContent='声音：'+(state.sound?'开':'关');
+  if(newGame&&!state.filmSeen.includes('intake'))showFilm('intake',()=>{state.location='hall';save();render()});else render();
+}
+$$('[data-action="new"]').forEach(b=>b.onclick=()=>enter(true));
+$('#continueBtn').disabled=!localStorage.getItem(SAVE);
+$('#continueBtn').onclick=()=>enter(false);
+if(meta.completed)$('#truthReplayBoot').classList.remove('hidden');
+$('#truthReplayBoot').onclick=()=>{state=defaults();$('#boot').classList.add('hidden');$('#app').classList.remove('hidden');showFilm('replayTruth',()=>{$('#app').classList.add('hidden');$('#boot').classList.remove('hidden')})};
+
+/* ===== diegetic hall ===== */
+const locationInfo={
+  interrogation:['讯问室 03','第一次讯问录像与补充讯问','film_interrogation_wide.jpg'],
+  scene:['西河公寓 4-702','现场勘验与物证位置','film_apartment_wide.jpg'],
+  evidence:['物证室','原始证物与导出材料','film_records_wide.jpg'],
+  video:['视频复核室','20:36—21:52记录复核','film_corridor_wide.jpg'],
+  bookstore:['迟夏书店','林夏手机缓存与当晚活动','film_bookstore_wide.jpg'],
+  property:['物业值班室','设备终端与审计日志','film_records_detail.jpg'],
+  forensic:['法医复核室','死亡过程与急救窗口','film_records_wide.jpg'],
+  review:['案件复核会议室','分段责任链','film_records_wide.jpg']
+};
+function proceduralItems(){
+  if(state.stage===0)return [
+    ['听取第一次讯问关键问题',state.asked.includes('why')&&state.asked.includes('weapon')],
+    ['检查4-702书桌与倒地位置',state.scene.includes('desk')&&state.scene.includes('floor')],
+    ['核对E01与E02原始材料',state.viewed.includes('confession')&&state.viewed.includes('brass')]
+  ];
+  if(state.stage===1)return [['补核物证采集位置',state.drawerResolved]];
+  if(state.stage===2)return [['复核20:36—21:52记录来源',state.lastSeenSolved]];
+  if(state.stage===3)return [['核对陈默到场时间并补充讯问',state.arrivalConfronted]];
+  if(state.stage===4)return [['核对迟夏书店时间记录',state.sequenceSolved]];
+  if(state.stage===5)return [['完成物业设备审计',state.propertySolved]];
+  if(state.stage===6)return [['复核死亡过程与急救时间',state.forensicSolved]];
+  if(state.stage===7)return [['完成陈默补充讯问',state.secondAsked]];
+  if(state.stage>=8&&!state.ending)return [['完成案件责任链复核',false]];
+  return [];
+}
+function renderHall(){
+  ambient('records');
+  const cards=Object.entries(locationInfo).map(([id,x])=>{
+    const lock=!unlocked(id);
+    return `<button class="location-card ${lock?'locked':''}" data-loc="${id}">
+      <small>${lock?'SEALED':'OPEN'}</small><b>${x[0]}</b><p>${lock?'该场所尚未进入复核程序。':x[1]}</p>
+    </button>`;
+  }).join('');
+  const items=proceduralItems();
+  $('#view').innerHTML=`<section class="scene-screen">
+    <img class="scene-bg" src="assets/images/film_corridor_wide.jpg" alt="">
+    <div class="scene-shade"></div>
+    <div class="scene-copy">
+      <div class="kicker">${state.stage<2?'TRANSFER CHECK':'SUPPLEMENTAL REVIEW'} / CASE 17</div>
+      <h1>${state.stage<2?'案件移送核验':'第17号案件 · 补充复核'}</h1>
+      <p>${state.stage<2?'先完成程序性核验。系统不会替你判断口供是否可信。':'从原始材料重新建立案件，不沿用原案对记录的解释。'}</p>
+      <div class="location-grid">${cards}</div>
+      ${items.length?`<div class="procedure-slip"><b>程序清单</b><ul>${items.map(x=>`<li class="${x[1]?'done':''}">${x[0]}</li>`).join('')}</ul>
+      ${state.stage===0&&items.every(x=>x[1])&&!state.transferSubmitted?'<button id="submitTransfer" class="primary">提交移送核验</button>':''}</div>`:''}
     </div>
-    <aside class="interrogation-console"><div class="console-kicker">第一次讯问 / PLAYBACK</div><h2>陈默</h2><div class="question-bank">${availableQuestions().map(x=>`<button class="question ${x.id===q.id?'active':''} ${state.asked.includes(x.id)?'played':''}" data-question="${x.id}">${esc(x.q)}</button>`).join('')}</div>
-      <div class="console-actions"><button class="primary" data-play-question>播放片段</button>${asked?`<button data-mark="${q.mark}" class="${state.marked.includes(q.mark)?'marked':''}">${state.marked.includes(q.mark)?'已记入笔记':'标记原句'}</button>`:''}</div>
-      <p class="console-note">录像只呈现原话和可观察行为，不自动标注“真/假”。</p></aside>
   </section>`;
-  $$('[data-question]').forEach(b=>b.onclick=()=>{state.currentInterrogation=b.dataset.question;save();renderInterrogation()});
-  $('[data-play-question]').onclick=()=>{state.asked=uniq([...state.asked,q.id]);playSfx('rec');save();renderInterrogation()};
-  $$('[data-mark]').forEach(b=>b.onclick=()=>{state.marked=uniq([...state.marked,b.dataset.mark]);save();renderInterrogation()});
+  $$('[data-loc]').forEach(b=>b.onclick=()=>go(b.dataset.loc));
+  const st=$('#submitTransfer');if(st)st.onclick=submitTransfer;
+}
+function submitTransfer(){
+  openModal(`<div class="doc-meta"><h2>移送核验结论</h2><p>目前已核对的讯问、现场与凶器材料是否能够相互对应？</p>
+  <div class="compare-actions"><button data-transfer="yes">可以对应</button><button data-transfer="no">材料不足</button></div></div>`);
+  $$('[data-transfer]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.transfer==='yes'){
+      closeModal(false);state.transferSubmitted=true;setStage(1);addFact('第一次讯问、凶器和倒地位置能够相互对应。');save();
+      showFilm('transferPass');
+    }else toast('继续核对随卷材料。');
+  });
+}
+function go(loc){if(!unlocked(loc))return;state.location=loc;save();render()}
+
+/* ===== interrogation ===== */
+function availableQuestions(){
+  const base=[
+    {id:'why',q:'为什么主动投案？',a:'因为人是我杀的。事情到我这里就结束。',beh:'回答立即开始，无明显停顿。'},
+    {id:'weapon',q:'凶器是什么？',a:'桌边那只黄铜书挡。我拿起来砸了他。',beh:'说到“黄铜书挡”时视线没有移开。'}
+  ];
+  if(state.stage>=1)base.push({id:'drawer',q:'后来怎么处理凶器？',a:'擦了一下，放回书桌第二层抽屉。',beh:'“第二层”回答很快。'});
+  if(state.stage>=3)base.push({id:'arrival',q:'你几点到、几点离开？',a:'21点45分左右到，21点58分左右离开。',beh:'时间表达完整，没有反复修正。'});
+  if(state.stage>=7)base.push({id:'second',q:'20:50林夏已经知道邱承倒下。你那时在哪里？',a:'……我到的时候，他已经倒在那里。',beh:'这句话与第一次供述出现直接冲突。'});
+  return base;
+}
+function renderInterrogation(){
+  ambient('interrogation');
+  const qs=availableQuestions();
+  const cur=qs.find(q=>q.id===(state.currentQ||''))||qs[0];state.currentQ=cur.id;
+  $('#view').innerHTML=`<section class="interrogation-room">
+    <img class="scene-bg" src="assets/images/film_interrogation_wide.jpg" alt="讯问室环境">
+    <div class="scene-shade"></div><div class="cam-time"><span class="rec">● REC</span>ROOM 03 / 21:14:${String(8+state.asked.length*7).padStart(2,'0')}</div>
+    <div class="interrogation-console">
+      <h2>第一次讯问录像</h2><div class="mono">原案材料 / 未附行为结论</div>
+      <div class="question-list">${qs.map(q=>`<button class="${state.asked.includes(q.id)?'asked':''}" data-q="${q.id}">${q.q}</button>`).join('')}</div>
+      <div class="transcript"><div class="q">韩川：${esc(cur.q)}</div><div class="a">陈默：${esc(cur.a)}</div><div class="behaviour">观察记录：${esc(cur.beh)}</div></div>
+      ${state.stage>=3&&state.arrivalSeen&&state.asked.includes('arrival')&&!state.arrivalConfronted?'<div class="confront-row"><button id="arrivalConfront" class="primary">把E15到场记录放到桌上</button></div>':''}
+      ${state.stage>=7&&state.asked.includes('second')&&!state.secondAsked?'<div class="confront-row"><button id="secondConfront" class="primary">把时间材料放到桌上</button></div>':''}
+    </div>
+  </section>`;
+  $$('[data-q]').forEach(b=>b.onclick=()=>{
+    state.currentQ=b.dataset.q;
+    if(!state.asked.includes(b.dataset.q))state.asked.push(b.dataset.q);
+    if(['why','weapon','drawer'].includes(b.dataset.q))markViewed('confession');
+    save();playFx('rec');renderInterrogation();
+  });
+  $('#arrivalConfront')?.addEventListener('click',()=>{
+    state.arrivalConfronted=true;setStage(4);addFact('陈默到场记录显示其21:29进入B座。');save();
+    showFilm('arrivalBreak');
+  });
+  $('#secondConfront')?.addEventListener('click',()=>{
+    state.secondAsked=true;setStage(8);addFact('补充讯问中，陈默承认自己到场时邱承已经倒地。');save();
+    showFilm('secondConfession');
+  });
 }
 
-/* ---------- SCENE ---------- */
+/* ===== scene ===== */
+const hotspots=[
+  {id:'desk',label:'书桌',x:47,y:48,w:23,h:20,ev:'brass',text:'书桌右侧区域提取黄铜书挡。'},
+  {id:'floor',label:'倒地位置',x:28,y:55,w:26,h:25,text:'倒地位置与第一次供述描述基本对应。'},
+  {id:'phone',label:'桌边设备',x:39,y:57,w:14,h:13,ev:'phone',stage:2,text:'邱承手机在桌边提取。'},
+  {id:'door',label:'入户门',x:76,y:28,w:18,h:40,ev:'access',stage:2,text:'入户门未见强行破坏痕迹。'},
+  {id:'drawer',label:'抽屉',x:57,y:52,w:18,h:18,ev:'drawer',stage:1,text:'物证采集位置补录。'}
+];
 function renderScene(){
-  const hs=D.sceneHotspots.filter(h=>h.stage<=state.stage);
-  $('#view').innerHTML=`<section class="scene-investigation"><div class="scene-head"><div><span>SCENE / 4-702</span><h2>现场勘查</h2></div><p>移动鼠标检查可交互区域；页面不显示发光轮廓。</p></div>
-  <div class="scene-canvas"><img src="assets/images/scene_apartment.jpg" alt="4-702案发现场环境重建">${hs.map(h=>`<button class="hotspot ${state.sceneChecked.includes(h.id)?'checked':''}" style="left:${h.x}%;top:${h.y}%;width:${h.w}%;height:${h.h}%" data-hotspot="${h.id}" aria-label="检查${esc(h.name)}"><span>${state.sceneChecked.includes(h.id)?'已检':'检查'}</span></button>`).join('')}<div class="scene-caption">4-702 / ENVIRONMENT RECONSTRUCTION</div></div>
-  <div class="scene-mobile-list">${hs.map(h=>`<button data-hotspot="${h.id}" class="${state.sceneChecked.includes(h.id)?'checked':''}">${esc(h.name)}${state.sceneChecked.includes(h.id)?' · 已检':''}</button>`).join('')}</div></section>`;
-  $$('[data-hotspot]').forEach(b=>b.onclick=()=>inspectHotspot(b.dataset.hotspot));
-}
-function inspectHotspot(id){const h=D.sceneHotspots.find(x=>x.id===id);if(!h||h.stage>state.stage)return;state.sceneChecked=uniq([...state.sceneChecked,id]);if(ev(id))state.viewed=uniq([...state.viewed,id]);save();playSfx('paper');openModal(`<div class="scene-detail"><div class="scene-detail-img"><img class="zoomable" src="assets/images/${h.img}" alt="${esc(h.name)}"></div><div><div class="doc-kicker">SCENE CHECK</div><h2>${esc(h.name)}</h2><p>${esc(h.text)}</p><p class="muted">点击图片可放大查看。</p></div></div>`);bindZoom()}
-
-/* ---------- PEOPLE ---------- */
-function renderPeople(){
-  const list=D.people.filter(p=>p.stage<=state.stage);
-  $('#view').innerHTML=`<section class="people-wall"><header><span>RELATION FILES / CASE 17</span><h2>关系人档案</h2><p>这里只显示已进入卷宗的身份资料。后续补充笔录会随调查开放。</p></header><div class="people-grid">${list.map((p,i)=>`<button class="person-file" data-person="${p.id}" style="--r:${[-.5,.35,.1,-.35,.45,-.2,.25,-.45][i]||0}deg"><div class="person-file-photo"><img src="assets/images/${p.scene}" alt="${esc(p.name)}关联环境照"></div><div class="person-file-tab">${p.file}</div><b>${esc(p.name)}</b><small>${esc(p.role)}</small><p>${esc(p.bio)}</p></button>`).join('')}</div></section>`;
-  $$('[data-person]').forEach(b=>b.onclick=()=>showPerson(b.dataset.person));
-}
-function showPerson(id){const p=D.people.find(x=>x.id===id);if(!p)return;const reveal=(id==='chen'&&state.solved.includes('P13'))||(id==='lin'&&state.solved.includes('P12'))||(id==='zhao'&&state.solved.includes('P09'))||(id==='han'&&state.solved.includes('P08'));
-  openModal(`<div class="person-detail"><div class="person-detail-photo"><img src="assets/images/${p.scene}" alt="${esc(p.name)}关联环境"><small>${p.file} / ARCHIVE IMAGE</small></div><div><div class="doc-kicker">PERSON FILE ${p.file}</div><h2>${esc(p.name)}</h2><p class="roleline">${esc(p.role)}</p><section><h4>基础资料</h4><p>${esc(p.bio)}</p></section><section><h4>已核实信息</h4><ul>${p.known.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section><section><h4>本人原话</h4><p class="quote">${esc(p.statement)}</p></section>${reveal?`<section><h4>补充复核后</h4><p>${esc(p.later)}</p></section>`:''}</div></div>`)}
-
-/* ---------- EVIDENCE ---------- */
-function renderEvidence(){const cats=['all','现场材料','电子记录','通信记录','实物','影像记录','系统日志','法医材料','讯问材料'];const list=D.evidence.filter(e=>isEvAvailable(e[3])&&(state.evFilter==='all'||e[4]===state.evFilter));
-  $('#view').innerHTML=`<section class="evidence-lab"><div class="lab-head"><div><span>EVIDENCE TABLE / CASE 17</span><h2>物证与原始材料</h2><p>${D.evidence.filter(e=>isEvAvailable(e[3])).length}/18 项已入卷</p></div><div class="lab-filters">${cats.map(c=>`<button data-filter="${c}" class="${state.evFilter===c?'active':''}">${c==='all'?'全部':c}</button>`).join('')}</div></div><div class="evidence-grid">${list.map(e=>`<button class="evidence-card" data-ev="${e[3]}"><img src="assets/images/${e[2]}" alt="${esc(e[1])}"><span class="ev-bag-label">${e[0]}</span>${state.viewed.includes(e[3])?'<span class="ev-read">已阅</span>':''}<div class="ev-info"><b>${esc(e[1])}</b><small>${esc(e[4])}</small></div></button>`).join('')}</div></section>`;
-  $$('[data-filter]').forEach(b=>b.onclick=()=>{state.evFilter=b.dataset.filter;save();renderEvidence()});$$('[data-ev]').forEach(b=>b.onclick=()=>showEvidence(b.dataset.ev));
-}
-function showEvidence(id){if(!isEvAvailable(id))return;const e=ev(id),m=D.evidenceMeta[id];state.viewed=uniq([...state.viewed,id]);if(id==='voice'&&state.ending==='standard')state.ending='complete';save();playSfx('paper');let extra='';
-  if(id==='voice')extra=`<div class="voice-transcript"><b>辅助转写 / 11秒</b><p>林夏：“我打120。”</p><p>赵序：“先别打。你现在报警，所有人都会把这当成你预谋的。”</p><small>关键内容提供文字替代，不依赖音频。</small></div>`;
-  openModal(`<div class="evidence-detail"><div class="evidence-large"><img class="zoomable" src="assets/images/${e[2]}" alt="${esc(e[1])}"></div><div class="evidence-sheet"><div class="doc-kicker">${e[0]} / ${esc(e[4])}</div><h2>${esc(e[1])}</h2><dl><dt>来源</dt><dd>${esc(m[1])}</dd><dt>原始记录</dt><dd>${esc(m[2])}</dd></dl>${extra}<p class="muted">点击左侧图片可放大；推论不会写在材料标题中。</p></div></div>`);bindZoom();
-}
-
-
-function shuffledForReplay(arr){
-  if(state.mode!=='independent')return arr;
-  const seed=Math.floor((state.replaySeed||.314159)*1000000);
-  const h=x=>{const k=(x.id||x[3]||String(x));let n=seed;for(let i=0;i<k.length;i++)n=(n*33+k.charCodeAt(i))>>>0;return Math.sin(n)*10000%1};
-  return [...arr].sort((a,b)=>h(a)-h(b));
-}
-
-/* ---------- TIMELINE / RECORD AUDIT ---------- */
-const tagOptions=[['person','本人可确认'],['token','账户/凭证活动'],['environment','环境活动'],['unknown','无法判断']];
-function renderTimeline(){
-  const records=shuffledForReplay(D.records.filter(r=>r.stage<=state.stage));const inClassify=state.stage<=3;
-  $('#view').innerHTML=`<section class="timeline-room"><header><div><span>TIME / SOURCE AUDIT</span><h2>${inClassify?'记录来源复核':'案件时间白板'}</h2></div><p>${inClassify?'给每条记录标注它本身能够确认到的层级。':'已确认时间与来源并列展示；人物身份需要单独证据。'}</p></header>
-    ${inClassify?`<div class="record-board">${records.map(r=>recordCard(r)).join('')}</div>${state.solved.includes('P03')&&state.solved.includes('P04')&&state.solved.includes('P05')&&state.solved.includes('P06')&&state.solved.includes('P07')&&!state.solved.includes('P08')?synthesisPanel():''}`:fullTimeline()}
+  ambient('rain');
+  $('#view').innerHTML=`<section class="scene-screen">
+    <img class="scene-bg" src="assets/images/film_apartment_wide.jpg" alt="4-702现场">
+    <div class="scene-shade"></div>
+    ${hotspots.filter(h=>(h.stage||0)<=state.stage).map(h=>`<button class="hotspot" data-hot="${h.id}" data-label="${h.label}" style="left:${h.x}%;top:${h.y}%;width:${h.w}%;height:${h.h}%"></button>`).join('')}
+    <div class="scene-tip">移动鼠标检查现场 · 无关键点高亮</div>
+    <div class="field-panel"><h3>4-702 · 原现场重建</h3><p>${state.stage<1?'按移送程序核对供述中出现的物品与位置。':'打开原始定位材料时，只记录你真正看到的内容。'}</p><small class="mono">CHECKED ${state.scene.length} / ${hotspots.filter(h=>(h.stage||0)<=state.stage).length}</small></div>
   </section>`;
-  $$('[data-record-open]').forEach(b=>b.onclick=()=>showEvidence(b.dataset.recordOpen));$$('[data-record-tag]').forEach(b=>b.onclick=()=>classifyRecord(b.dataset.recordTag,b.dataset.tag));$$('[data-synth]').forEach(b=>b.onclick=()=>{if(b.dataset.synth==='correct')solve('P08');else fail('P08')});
+  $$('[data-hot]').forEach(b=>b.onclick=()=>inspectHotspot(b.dataset.hot));
 }
-function recordCard(r){const e=ev(r.id),read=state.viewed.includes(r.id);return `<article class="record-card ${state.recordTags[r.id]?'tagged':''}"><div class="record-time">${r.time}</div><button class="record-thumb" data-record-open="${r.id}" aria-label="查看${esc(r.title)}原始材料"><img src="assets/images/${e[2]}" alt="${esc(r.title)}"></button><div class="record-body"><b>${esc(r.title)}</b><small>来源：${esc(r.source)} · ${read?'已阅':'先查看原始材料'}</small><div class="record-tags">${tagOptions.map(([id,l])=>`<button data-record-tag="${r.id}" data-tag="${id}" class="${state.recordTags[r.id]===id?'selected':''}" ${read?'':'disabled'}>${l}</button>`).join('')}</div></div></article>`}
-function classifyRecord(id,tag){state.recordTags[id]=tag;save();const r=D.records.find(x=>x.id===id);if(tag!==r.correct){fail(`record-${id}`,'这个标签与材料本身能够确认的范围不一致。');return renderTimeline()}
-  const map={cctv:'P03',payment:'P04',access:'P05',taxi:'P07'};if(map[id]&&!state.solved.includes(map[id]))solve(map[id],{silent:true});
-  if(state.recordTags.water==='environment'&&state.recordTags.parcel==='token'&&!state.solved.includes('P06'))solve('P06',{silent:true});
-  render();
+function inspectHotspot(id){
+  const h=hotspots.find(x=>x.id===id);if(!h)return;
+  if(!state.scene.includes(id))state.scene.push(id);save();
+  if(id==='drawer'){drawerCompare();return}
+  if(h.ev){openEvidence(h.ev)}
+  else openModal(`<div class="doc-meta"><h2>${h.label}</h2><p>${h.text}</p></div>`);
 }
-function synthesisPanel(){return `<div class="synthesis"><div class="doc-kicker">BATCH REVIEW / 20:36—21:52</div><h3>请选择这组记录能够共同支持的最强表述</h3><button data-synth="a">21:18—21:52持续存在邱承本人的直接活动。</button><button data-synth="correct">20:36后仍有多条真实活动记录，但没有再次直接确认本人。</button><button data-synth="c">后续电子记录均被人为伪造。</button></div>`}
-function fullTimeline(){const items=[['20:36','邱承出现在电梯','面部可确认'],['20:44','林夏进入4层','消防梯视频'],['20:50','林夏发送消息','手机缓存'],['20:52','拨打120，4秒中断','通信缓存'],['21:06','赵序登录物业终端','设备日志'],['21:18','移动支付16元','账户/设备'],['21:24','Q-4702门卡通过','卡片'],['21:27','陈默车辆进入车库','车场影像'],['21:29','陈默进入B座','消防梯影像'],['21:31','4-702用水18.6L','水表'],['21:38','快递柜7-14开启','取件码'],['21:52','邱承账户下单网约车','账户']];return `<div class="whiteboard"><div class="whiteboard-line"></div>${items.map((x,i)=>`<article class="wb-event" style="--i:${i}"><time>${x[0]}</time><b>${x[1]}</b><small>${x[2]}</small></article>`).join('')}</div>`}
-
-/* ---------- REASONING WORKBENCH ---------- */
-function renderReason(){const p=currentPuzzle();if(!p){$('#view').innerHTML=`<section class="reason-desk"><div class="reason-empty">当前阶段没有待处理的核验项。</div></section>`;return}
-  let html='';switch(p.type){
-    case'intake':html=renderIntakePuzzle(p);break;case'compare':html=renderComparePuzzle(p);break;case'audit':html=renderAuditPuzzle(p);break;case'arrival':html=renderArrivalPuzzle(p);break;case'order':html=renderOrderPuzzle(p);break;case'rescue':html=renderRescuePuzzle(p);break;case'knowledge':html=renderKnowledgePuzzle(p);break;case'responsibility':html=renderResponsibilityPuzzle(p);break;default:html=`<div class="route-card"><h3>${esc(p.label)}</h3><p>这一核验项在“时间轴”页面完成。</p><button data-route="timeline">前往时间轴</button></div>`;}
-  $('#view').innerHTML=`<section class="reason-desk"><header><span>WORKBENCH / ${p.id}</span><h2>${esc(p.label)}</h2></header>${html}</section>`;bindReason(p);
-}
-function renderIntakePuzzle(){const req={weapon:state.asked.includes('weapon'),body:state.asked.includes('body'),brass:state.sceneChecked.includes('brass'),floor:state.sceneChecked.includes('body')};const ready=Object.values(req).every(Boolean);return `<div class="intake-board"><div class="intake-row"><b>供述：凶器</b><span>${req.weapon?'已播放':'未播放'}</span><b>现场：书桌边缘</b><span>${req.brass?'已检查':'未检查'}</span></div><div class="intake-row"><b>供述：倒地位置</b><span>${req.body?'已播放':'未播放'}</span><b>现场：书桌右侧</b><span>${req.floor?'已检查':'未检查'}</span></div><button class="primary" data-intake-submit ${ready?'':'disabled'}>确认两项材料对应</button>${ready?'':'<p class="muted">先在讯问和现场页完成基础核验。</p>'}</div>`}
-function renderComparePuzzle(){const ready=state.asked.includes('drawer')&&state.sceneChecked.includes('drawer');return `<div class="compare-desk"><article><span>讯问原句</span><blockquote>${state.asked.includes('drawer')?'“擦过以后，放回书桌左边第二层抽屉。”':'尚未播放“之后怎么处理书挡”片段。'}</blockquote></article><article><span>现场定位</span><blockquote>${state.sceneChecked.includes('drawer')?'“提取位置：书桌左侧第一层。”':'尚未完成补充定位检查。'}</blockquote></article>${ready?`<div class="binary"><button data-compare="same">两条记录一致</button><button data-compare="different">两条记录不一致</button></div>`:'<p class="muted">把两份原始记录都打开后再作判断。</p>'}</div>`}
-function renderAuditPuzzle(){if(!state.viewed.includes('zhaolog'))return `<div class="route-card"><h3>需要E14原始日志</h3><p>先到物证页打开赵序设备访问日志，再回到这里复核。</p><button data-route="evidence">前往物证台</button></div>`;return `<div class="terminal-audit"><div class="terminal-screen"><p>21:06:14 LOGIN zhao_xu</p><p>21:07:02 QUERY ACCESS_LOG 20260518</p><p>21:08:31 QUERY WATER_METER 4702</p><p>21:09:10 EXPORT CSV / local</p><p>21:10:44 LOGOUT</p></div><h3>这段审计日志里是否出现WRITE / UPDATE / DELETE等写入或修改操作？</h3><div class="binary"><button data-audit="yes">出现</button><button data-audit="no">没有出现</button></div></div>`}
-function renderArrivalPuzzle(){if(!state.viewed.includes('arrival'))return `<div class="route-card"><h3>需要E15到场记录</h3><p>先打开车库/消防梯联合记录。</p><button data-route="evidence">前往物证台</button></div>`;return `<div class="arrival-strip"><p>请选择能够最早直接确认陈默进入西河公寓范围的记录。</p><div class="arrival-options">${['20:44 林夏进入4层','21:06 赵序登录终端','21:27 陈默车辆入库','21:29 陈默进入B座'].map((x,i)=>`<button data-arrival="${i}">${x}</button>`).join('')}</div></div>`}
-function renderOrderPuzzle(){if(!state.viewed.includes('message')||!state.viewed.includes('arrival'))return `<div class="route-card"><h3>需要E16与E15</h3><p>先分别查看林夏消息缓存和陈默到场记录。</p><button data-route="evidence">前往物证台</button></div>`;return `<div class="order-puzzle"><h3>只比较两份记录：哪一条先发生？</h3><button data-order="message"><time>20:50</time><b>林夏消息：“他倒下了，还在喘。”</b></button><button data-order="arrival"><time>21:27</time><b>陈默车辆进入西河公寓车库</b></button></div>`}
-function renderRescuePuzzle(){if(!['message','call','autopsy'].every(x=>state.viewed.includes(x)))return `<div class="route-card"><h3>需要E16、E12、E17</h3><p>先查看消息缓存、急救号码缓存与法医底稿。</p><button data-route="evidence">前往物证台</button></div>`;const events=[['20:48','冲突后头部受伤'],['20:50','“他倒下了，还在喘”'],['20:52','拨打120 / 4秒'],['21:27','陈默到场']];return `<div class="rescue-band"><div class="medical-note">法医底稿：头部损伤后存在可救治时间窗。</div><div class="rescue-events">${events.map((x,i)=>`<button data-rescue="${i}"><time>${x[0]}</time><span>${x[1]}</span></button>`).join('')}</div><p>请选择“救助已经启动、但没有真正建立”的记录节点。</p></div>`}
-function renderKnowledgePuzzle(){if(!['confession','arrival','message'].every(x=>state.viewed.includes(x)))return `<div class="route-card"><h3>需要E01、E15、E16</h3><p>先回看第一次供述、到场记录与林夏消息。</p><button data-route="evidence">前往物证台</button></div>`;const rows=[['body','尸体倒地位置',['亲历最初冲突','事后进入现场可见','只能来自口供脚本']],['weapon','黄铜书挡是涉案物',['亲历最初冲突','事后现场/他人转述可知','无法得知']],['drawer','书挡被放回“第二层”',['亲历最初冲突','事后现场可见','准备口供时被转述的细节']]];return `<div class="knowledge-matrix"><p>根据已经确认的到场时间，为三项供述细节选择最合理的信息来源。</p>${rows.map(r=>`<label><b>${r[1]}</b><select data-knowledge="${r[0]}"><option value="">请选择</option>${r[2].map((o,i)=>`<option value="${i}">${o}</option>`).join('')}</select></label>`).join('')}<button class="primary" data-knowledge-submit>提交来源矩阵</button></div>`}
-function renderResponsibilityPuzzle(){if(!['brass','autopsy','call','zhaolog','confession'].every(x=>state.viewed.includes(x)))return `<div class="route-card"><h3>责任材料尚未阅齐</h3><p>至少需要E02、E17、E12、E14和E01。</p><button data-route="evidence">前往物证台</button></div>`;const rows=[['initial','20:48附近 / 初始伤害',['林夏','陈默','赵序']],['rescue','20:52 / 救助中断',['林夏 / 赵序','陈默','韩川']],['timeline','21:06后 / 记录利用',['赵序','陈默','韩川']],['confession','第三天 / 主动投案',['陈默','林夏','赵序']]];return `<div class="responsibility-chain"><p>先按发生顺序整理行为，不在这一页判断最终罪名。</p>${rows.map(r=>`<label><span>${r[1]}</span><select data-resp="${r[0]}"><option value="">选择主要行为人</option>${r[2].map(o=>`<option>${o}</option>`).join('')}</select></label>`).join('')}<button class="primary" data-resp-submit>形成行为链</button></div>`}
-function bindReason(p){
-  $$('[data-route]').forEach(b=>b.onclick=()=>{state.tab=b.dataset.route;save();render()});
-  const a=$('[data-intake-submit]');if(a)a.onclick=()=>solve('P01');
-  $$('[data-compare]').forEach(b=>b.onclick=()=>b.dataset.compare==='different'?solve('P02'):fail('P02'));
-  $$('[data-audit]').forEach(b=>b.onclick=()=>b.dataset.audit==='no'?solve('P09'):fail('P09'));
-  $$('[data-arrival]').forEach(b=>b.onclick=()=>b.dataset.arrival==='2'?solve('P10'):fail('P10'));
-  $$('[data-order]').forEach(b=>b.onclick=()=>b.dataset.order==='message'?solve('P11'):fail('P11'));
-  $$('[data-rescue]').forEach(b=>b.onclick=()=>b.dataset.rescue==='2'?solve('P12'):fail('P12'));
-  const ks=$('[data-knowledge-submit]');if(ks)ks.onclick=()=>{const v={};$$('[data-knowledge]').forEach(s=>v[s.dataset.knowledge]=s.value);if(v.body==='1'&&v.weapon==='1'&&v.drawer==='2')solve('P13');else fail('P13')};
-  const rs=$('[data-resp-submit]');if(rs)rs.onclick=()=>{const v={};$$('[data-resp]').forEach(s=>v[s.dataset.resp]=s.value);if(v.initial==='林夏'&&v.rescue==='林夏 / 赵序'&&v.timeline==='赵序'&&v.confession==='陈默')solve('P14');else fail('P14')};
+function drawerCompare(){
+  markViewed('drawer');
+  openModal(`<h2>物证采集位置核对</h2>
+    <div class="compare-grid">
+      <div><img src="assets/images/ev_confession.jpg" alt="第一次供述"><p>第一次供述原句可在录像转写中回看。</p></div>
+      <div><img src="assets/images/ev_drawer.jpg" alt="现场定位记录"><p>现场采集位置记录。</p></div>
+    </div>
+    <p>两份材料关于“书挡放置层数”的记录是否一致？</p>
+    <div class="compare-actions"><button data-drawer="same">一致</button><button data-drawer="diff">不一致</button><button data-drawer="unknown">无法判断</button></div>`);
+  $$('[data-drawer]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.drawer==='diff'){
+      closeModal(false);state.drawerResolved=true;setStage(2);addFact('第一次供述写“第二层”，现场采集记录写“第一层”。');save();
+      showFilm('drawerBreak');
+    }else toast('再读一次两份原始材料。');
+  });
 }
 
-/* ---------- FINAL ---------- */
-function renderFinal(){if(state.stage<7){$('#view').innerHTML='<section class="review-room"><div class="locked-room">复核会议尚未召开。</div></section>';return}if(state.ending)return renderEnding();
-  const available=D.evidence.filter(e=>state.viewed.includes(e[3]));
-  $('#view').innerHTML=`<section class="review-room"><header><span>CASE 17 / REVIEW MEETING</span><h2>案件复核会议</h2><p>为四段行为分别确定主要行为人，并挂接至少两份已经阅卷的材料。</p></header><div class="review-table">${D.final.roles.map(r=>`<article class="review-role"><h3>${r.label}</h3><select data-final-person="${r.id}"><option value="">选择主要行为人</option>${r.people.map(p=>`<option>${p}</option>`).join('')}</select><div class="review-evidence">${available.map(e=>`<label><input type="checkbox" data-final-ev="${r.id}" value="${e[3]}"><span>${e[0]} ${esc(e[1])}</span></label>`).join('')}</div></article>`).join('')}</div><div class="case-model"><h3>案件模型</h3>${D.final.models.map(m=>`<label><input type="radio" name="finalModel" value="${esc(m)}"><span>${esc(m)}</span></label>`).join('')}</div><button class="seal-button" id="submitFinal">生成复核结论</button><div id="finalResult" class="final-result"></div></section>`;
+/* ===== evidence ===== */
+function evAvailable(id){
+  const e=ev(id);if(!e)return false;
+  if(id==='voice')return state.stage>=5;
+  return e.stage<=state.stage;
+}
+function renderEvidence(){
+  ambient('records');
+  $('#view').innerHTML=`<section class="evidence-room"><div class="room-head"><div><h1>物证室</h1><p>CASE 17 / ORIGINAL MATERIALS</p></div><span class="mono">只展示当前已入卷材料</span></div>
+    <div class="evidence-grid">${Object.entries(D.evidence).filter(([id,e])=>evAvailable(id)).map(([id,e])=>`<button class="ev-card" data-ev="${id}">
+      <img src="assets/images/${e.img}" alt="${esc(e.name)}"><div class="ev-body"><strong>${e.no} · ${esc(e.name)}</strong><small>${esc(e.kind)} ${state.viewed.includes(id)?'· 已阅':''}</small></div></button>`).join('')}</div>
+  </section>`;
+  $$('[data-ev]').forEach(b=>b.onclick=()=>openEvidence(b.dataset.ev));
+}
+function openEvidence(id){
+  const e=ev(id);if(!e)return;markViewed(id);
+  if(id==='voice')state.voiceSeen=true;
+  save();
+  openModal(`<div class="document-view"><div><img src="assets/images/${e.img}" alt="${esc(e.name)}"></div><div class="doc-meta"><div class="mono">${e.no} / ${esc(e.kind)}</div><h2>${esc(e.name)}</h2><p>${esc(e.raw)}</p>${id==='voice'?'<p><b>文字转写已随卷保存，因此不需要依赖声音完成案件。</b></p>':''}</div></div>`);
+}
+
+/* ===== video room / record classification ===== */
+const recordIds=['cctv','payment','access','water','parcel','taxi'];
+const tagLabels={person:'直接确认本人',carrier:'确认凭证/账户/设备',environment:'确认环境行为',unknown:'无法确认'};
+function renderVideo(){
+  ambient('records');
+  const allCorrect=recordIds.every(id=>state.tags[id]===D.recordTags[id]);
+  $('#view').innerHTML=`<section class="video-room"><div class="room-head"><div><h1>视频与系统记录复核</h1><p>20:36—21:52 / SOURCE CLASSIFICATION</p></div><span class="mono">先标注“记录直接确认了什么”</span></div>
+  <div class="monitor-wall">${recordIds.map(id=>{const e=ev(id);return `<div class="monitor"><div class="monitor-id">${e.no}</div><img src="assets/images/${e.img}" alt="${esc(e.name)}"><p>${esc(e.raw)}</p>
+    <button data-open-record="${id}">打开原件</button>
+    <div class="tag-row">${Object.entries(tagLabels).map(([k,l])=>`<button data-tag="${id}:${k}" class="${state.tags[id]===k?'active':''}" ${state.viewed.includes(id)?'':'disabled'}>${l}</button>`).join('')}</div></div>`}).join('')}</div>
+  ${allCorrect&&!state.lastSeenSolved?`<div class="video-question"><h3>在这些材料中，最后一条能直接确认邱承本人出现的是：</h3>
+  <div class="compare-actions"><button data-last="cctv">20:36 电梯画面</button><button data-last="payment">21:18 支付</button><button data-last="taxi">21:52 叫车</button></div></div>`:''}
+  ${state.stage===3&&!state.arrivalSeen?`<div class="video-question"><h3>补查：陈默车辆与消防梯画面</h3><button id="openArrival">调取B2停车场 / 消防梯片段</button></div>`:''}
+  </section>`;
+  $$('[data-open-record]').forEach(b=>b.onclick=()=>{openEvidence(b.dataset.openRecord);});
+  $$('[data-tag]').forEach(b=>b.onclick=()=>{
+    const [id,k]=b.dataset.tag.split(':');state.tags[id]=k;save();renderVideo();
+  });
+  $$('[data-last]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.last==='cctv'){
+      state.lastSeenSolved=true;setStage(3);addFact('20:36电梯画面是现有材料中最后一条直接确认邱承面部的记录。');save();
+      showFilm('recordsMontage');
+    }else toast('这条材料记录了活动，但是否直接确认了本人？');
+  });
+  $('#openArrival')?.addEventListener('click',()=>{
+    state.arrivalSeen=true;markViewed('arrival');save();openEvidence('arrival');renderVideo();
+  });
+}
+
+/* ===== bookstore ===== */
+function renderBookstore(){
+  ambient('rain');
+  $('#view').innerHTML=`<section class="diegetic-screen"><img class="scene-bg" src="assets/images/film_bookstore_wide.jpg" alt="迟夏书店"><div class="scene-shade"></div>
+  <div class="prop-stack"><div class="mono">迟夏书店 / 补充调取</div><h1>林夏当晚手机缓存</h1><p>这里不评价动机，只核对三个时间点。</p>
+  <div class="phone-card"><button data-book="message">打开20:50消息缓存</button>${state.bookstoreSeen.includes('message')?'<img src="assets/images/ev_bookshop_msg.jpg">':''}</div>
+  <div class="phone-card"><button data-book="call">打开20:52急救缓存</button>${state.bookstoreSeen.includes('call')?'<img src="assets/images/ev_call.jpg">':''}</div>
+  ${state.bookstoreSeen.length===2&&!state.sequenceSolved?`<div class="phone-card"><h3>按实际发生顺序排列：</h3><div class="sequence-row">
+  <select id="seq1"><option value="">第一</option><option value="message">20:50消息</option><option value="call">20:52急救</option><option value="arrival">21:29陈默到场</option></select>
+  <select id="seq2"><option value="">第二</option><option value="message">20:50消息</option><option value="call">20:52急救</option><option value="arrival">21:29陈默到场</option></select>
+  <select id="seq3"><option value="">第三</option><option value="message">20:50消息</option><option value="call">20:52急救</option><option value="arrival">21:29陈默到场</option></select></div><button id="checkSeq">核对时间</button></div>`:''}
+  </div></section>`;
+  $$('[data-book]').forEach(b=>b.onclick=()=>{const id=b.dataset.book;if(!state.bookstoreSeen.includes(id))state.bookstoreSeen.push(id);markViewed(id);save();renderBookstore()});
+  $('#checkSeq')?.addEventListener('click',()=>{
+    const x=[$('#seq1').value,$('#seq2').value,$('#seq3').value];
+    if(x.join(',')==='message,call,arrival'){
+      state.sequenceSolved=true;setStage(5);addFact('20:50林夏已知道邱承倒地；20:52拨打120；陈默21:29才进入B座。');save();showFilm('phoneFourSeconds');
+    }else toast('只按时间排序，不要加入推断。');
+  });
+}
+
+/* ===== property ===== */
+function renderProperty(){
+  ambient('records');
+  $('#view').innerHTML=`<section class="diegetic-screen"><img class="scene-bg" src="assets/images/film_records_detail.jpg" alt="物业终端"><div class="scene-shade"></div>
+  <div class="prop-stack"><div class="mono">西河公寓 / PROPERTY TERMINAL</div><h1>物业设备审计</h1>
+  <div class="terminal-card"><img src="assets/images/ev_zhao_log.jpg" alt="赵序设备日志"><button id="viewZhao">登记E14原件</button></div>
+  ${state.viewed.includes('zhaolog')&&!state.propertySolved?`<div class="terminal-card"><h3>审计日志中能够确认的操作类型：</h3><div class="compare-actions"><button data-op="read">查询</button><button data-op="write">写入/修改</button><button data-op="delete">删除</button></div></div>`:''}
+  ${state.propertySolved&&!state.voiceSeen?`<div class="terminal-card subtle"><small class="mono">未归档缓存 / PHONE AUTO-REC INDEX</small><p>赵序手机缓存中存在一条11秒自动录音索引。</p><button id="openVoice">加入卷宗（可选）</button></div>`:''}
+  </div></section>`;
+  $('#viewZhao').onclick=()=>{markViewed('zhaolog');openEvidence('zhaolog');renderProperty()};
+  $$('[data-op]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.op==='read'){
+      state.propertySolved=true;setStage(6);addFact('赵序21:06—21:10的设备日志仅包含查询操作。');save();showFilm('propertyAudit');
+    }else toast('审计记录里没有对应操作。');
+  });
+  $('#openVoice')?.addEventListener('click',()=>{state.voiceSeen=true;markViewed('voice');save();openEvidence('voice');renderProperty()});
+}
+
+/* ===== forensic ===== */
+function renderForensic(){
+  ambient('records');
+  $('#view').innerHTML=`<section class="diegetic-screen"><img class="scene-bg" src="assets/images/film_records_wide.jpg" alt="法医复核室"><div class="scene-shade"></div>
+  <div class="prop-stack"><div class="mono">FORENSIC REVIEW / CASE 17</div><h1>死亡过程复核</h1>
+  <div class="medical-file"><button data-forensic="autopsy">查看E17法医底稿</button>${state.forensicSeen.includes('autopsy')?'<img src="assets/images/ev_autopsy.jpg">':''}</div>
+  <div class="medical-file"><button data-forensic="call">查看E12急救缓存</button>${state.forensicSeen.includes('call')?'<img src="assets/images/ev_call.jpg">':''}</div>
+  ${state.forensicSeen.length===2&&!state.forensicSolved?`<div class="medical-file"><h3>仅根据已确认时间：</h3><p>陈默21:29进入B座；20:50林夏已发送“他倒下了，还在喘”。</p>
+    <div class="compare-actions"><button data-fq="no">陈默不可能参与20:50前的最初冲突</button><button data-fq="yes">陈默仍可能参与最初冲突</button></div>
+    <p>法医底稿是否显示受伤后仍存在独立的救助阶段？</p><div class="compare-actions"><button data-rq="yes">存在</button><button data-rq="no">不存在</button></div>
+    <button id="forensicSubmit" disabled>提交复核</button></div>`:''}
+  </div></section>`;
+  $$('[data-forensic]').forEach(b=>b.onclick=()=>{const id=b.dataset.forensic;if(!state.forensicSeen.includes(id))state.forensicSeen.push(id);markViewed(id);save();renderForensic()});
+  let fq=null,rq=null;
+  $$('[data-fq]').forEach(b=>b.onclick=()=>{fq=b.dataset.fq;$$('[data-fq]').forEach(x=>x.classList.toggle('active',x===b));$('#forensicSubmit').disabled=!(fq&&rq)});
+  $$('[data-rq]').forEach(b=>b.onclick=()=>{rq=b.dataset.rq;$$('[data-rq]').forEach(x=>x.classList.toggle('active',x===b));$('#forensicSubmit').disabled=!(fq&&rq)});
+  $('#forensicSubmit')?.addEventListener('click',()=>{
+    if(fq==='no'&&rq==='yes'){
+      state.forensicSolved=true;setStage(7);addFact('陈默21:29才到场；法医材料显示受伤后仍存在可救治时间窗。');save();showFilm('rescueWindow');
+    }else toast('重新核对20:50、21:29与法医底稿。');
+  });
+}
+
+/* ===== final review ===== */
+const responsibilityDefs={
+  initial:{title:'最初伤害',people:[['lin','林夏'],['chen','陈默'],['zhao','赵序']],expectedPerson:'lin',evidence:['cctv','brass','message'],expectedEvidence:['cctv','brass']},
+  rescue:{title:'救助中断',people:[['linzhao','林夏 / 赵序'],['chen','陈默'],['han','韩川']],expectedPerson:'linzhao',evidence:['message','call','autopsy','arrival'],expectedEvidence:['call','autopsy']},
+  cover:{title:'事后时间线设计',people:[['zhao','赵序'],['chen','陈默'],['han','韩川']],expectedPerson:'zhao',evidence:['zhaolog','access','water','payment'],expectedEvidence:['zhaolog','access']},
+  confess:{title:'虚假自首',people:[['chen','陈默'],['lin','林夏'],['zhao','赵序']],expectedPerson:'chen',evidence:['confession','arrival','drawer','message'],expectedEvidence:['confession','arrival']}
+};
+function renderReview(){
+  ambient('records');
+  const cards=Object.entries(responsibilityDefs).map(([id,d])=>{
+    const s=state.final[id];
+    return `<div class="responsibility-card"><h3>${d.title}</h3><div class="mono">主要行为人</div><div class="person-stamps">${d.people.map(([v,l])=>`<button data-person-pick="${id}:${v}" class="${s.person===v?'active':''}">${l}</button>`).join('')}</div>
+      <div class="mono" style="margin-top:14px">挂接两份关键材料</div><div class="evidence-picks">${d.evidence.map(eid=>`<button data-ev-pick="${id}:${eid}" class="${s.evidence.includes(eid)?'active':''}">${ev(eid).no} ${ev(eid).name}</button>`).join('')}</div></div>`;
+  }).join('');
+  $('#view').innerHTML=`<section class="review-room"><div class="review-table"><div class="mono">CASE REVIEW MEETING / FINAL</div><h1>案件复核会议</h1><p>不要寻找一个能覆盖全部过程的人。把四段行为分别固定。</p>
+  <div class="responsibility-grid">${cards}</div>
+  <div class="review-submit"><h3>案件模型</h3><div class="model-options">
+    <button data-model="single" class="${state.final.model==='single'?'active':''}">陈默单独故意杀人</button>
+    <button data-model="joint" class="${state.final.model==='joint'?'active':''}">三人共同预谋杀人</button>
+    <button data-model="layered" class="${state.final.model==='layered'?'active':''}">四段行为分别认定</button>
+  </div><button id="submitFinal" class="primary" style="margin-top:15px">生成补充复核意见</button></div></div></section>`;
+  $$('[data-person-pick]').forEach(b=>b.onclick=()=>{const [id,v]=b.dataset.personPick.split(':');state.final[id].person=v;save();renderReview()});
+  $$('[data-ev-pick]').forEach(b=>b.onclick=()=>{const [id,v]=b.dataset.evPick.split(':');const a=state.final[id].evidence;const i=a.indexOf(v);if(i>=0)a.splice(i,1);else{if(a.length>=2)a.shift();a.push(v)}save();renderReview()});
+  $$('[data-model]').forEach(b=>b.onclick=()=>{state.final.model=b.dataset.model;save();renderReview()});
   $('#submitFinal').onclick=submitFinal;
 }
-function submitFinal(){let good=true;D.final.roles.forEach(r=>{const p=$(`[data-final-person="${r.id}"]`).value;const chosen=$$(`[data-final-ev="${r.id}"]:checked`).map(x=>x.value);if(p!==r.correct||!r.need.every(x=>chosen.includes(x)))good=false});const model=$('input[name="finalModel"]:checked')?.value||'';if(model!==D.final.correctModel)good=false;if(!good){state.failures.final=(state.failures.final||0)+1;save();$('#finalResult').textContent='当前责任配置仍有材料无法支撑。检查“谁做了什么”和对应证据。';$('#finalResult').className='final-result bad';return}
-  state.ending=state.viewed.includes('voice')?'complete':'standard';meta.completed=true;meta.bestScore=Math.max(meta.bestScore||0,score());save();saveMeta();playSfx('printer');showTheatre('ending',()=>{render();});
+function submitFinal(){
+  let ok=true;
+  for(const [id,d] of Object.entries(responsibilityDefs)){
+    const s=state.final[id];if(s.person!==d.expectedPerson)ok=false;
+    if(!d.expectedEvidence.every(x=>s.evidence.includes(x)))ok=false;
+  }
+  if(state.final.model!=='layered')ok=false;
+  if(!ok){toast('复核意见仍有一段行为无法被当前材料解释。');return}
+  state.ending=true;meta.completed=true;localStorage.setItem(META,JSON.stringify(meta));save();
+  showFilm('ending',renderEnding);
 }
-function renderEnding(){const e=D.endings[state.ending]||D.endings.standard;const independent=state.mode==='independent';$('#view').innerHTML=`<section class="ending-room"><div class="ending-old"><span>原移送意见</span><b>陈默 · 故意杀人</b><div class="strike-stamp">撤回</div></div><div class="ending-paper"><div class="doc-kicker">CASE 17 / FINAL REVIEW</div><h2>${esc(independent?D.endings.independent.title:e.title)}</h2><p>${esc(independent?D.endings.independent.text:e.text)}</p><div class="ending-responsibilities"><span>林夏 · 初始伤害 / 救助处置</span><span>赵序 · 事后掩饰设计</span><span>陈默 · 虚假自首</span></div><div class="ending-score">复核评分 <b>${score()}</b> / 100 · 提示深度 ${Object.values(state.hintCount).reduce((a,b)=>a+b,0)} · 失败 ${Object.values(state.failures).reduce((a,b)=>a+b,0)}</div>${!state.viewed.includes('voice')?'<p class="epilogue-note">卷宗中还有一份新入卷材料未查看。</p>':''}<div class="ending-actions"><button data-act="new-independent">二周目 · 独立复核</button><button data-tab="case">回看卷宗</button></div></div></section>`;$$('[data-tab]').forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;save();render()});}
-
-/* ---------- MODALS / TOOLS / HINTS ---------- */
-function openModal(html){$('#modalBody').innerHTML=html;$('#modal').classList.remove('hidden');syncAmbient()}
-function closeModal(){$('#modal').classList.add('hidden');render();syncAmbient()}
-function bindZoom(){$$('.zoomable').forEach(img=>img.onclick=()=>img.classList.toggle('zoomed'))}
-function toast(msg,type='good'){const t=$('#toast');t.textContent=msg;t.className=`toast ${type}`;setTimeout(()=>t.classList.add('hidden'),2200)}
-function showNotebook(){const facts=state.solved.map(id=>puzzle(id)?.fact).filter(Boolean);$('#notebookBody').innerHTML=`<div class="notebook-facts">${facts.length?facts.map((f,i)=>`<p><span>${String(i+1).padStart(2,'0')}</span>${esc(f)}</p>`).join(''):'<p class="muted">尚无已确认事实。</p>'}</div><label class="free-note"><b>我的记录</b><textarea id="freeNote" placeholder="这里不会自动判断对错。">${esc(state.noteText)}</textarea></label>`;$('#notebook').classList.remove('hidden');$('#freeNote').oninput=e=>{state.noteText=e.target.value;save()}}
-function closeNotebook(){$('#notebook').classList.add('hidden')}
-function showHint(){const p=currentPuzzle();if(!p){return toast('当前没有待处理的核心核验项。')};const hs=D.hints[p.id]||[];let depth=Math.min((state.hintCount[p.id]||0)+1,3);state.hintCount[p.id]=depth;save();openModal(`<div class="hint-sheet"><div class="doc-kicker">主动提示 / ${p.id}</div><h2>第 ${depth} 级提示</h2><p>${esc(hs[depth-1]||'请重新查看原始材料。')}</p>${depth<3?'<button data-deeper-hint>再具体一点</button>':'<p class="muted">已到第三级。</p>'}</div>`);const b=$('[data-deeper-hint]');if(b)b.onclick=()=>{closeModal();showHint()}}
-function tools(){const payload=()=>JSON.stringify({version:3,state},null,2);openModal(`<div class="tools-sheet"><div class="doc-kicker">LOCAL TOOLS</div><h2>存档与设置</h2><button id="exportSave">导出存档</button><label class="import-label">导入存档<input type="file" id="importSave" accept="application/json"></label><button id="restartCase" class="danger">重新开始当前模式</button><p class="muted">所有进度保存在本机浏览器 localStorage。</p></div>`);$('#exportSave').onclick=()=>{const blob=new Blob([payload()],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='第二份口供_存档.json';a.click();URL.revokeObjectURL(a.href)};$('#importSave').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);state=normalize(x.state||x);save();closeModal();render();toast('存档已导入')}catch(err){toast('存档文件无法读取','bad')}};r.readAsText(f)};$('#restartCase').onclick=()=>{if(confirm('确定清空当前案件进度？')){reset(state.mode);location.reload()}}}
-
-/* ---------- THEATRE ---------- */
-function showTheatre(key,done){const seq=D.theatre[key];if(!seq||!seq.length){done?.();return}state.theatreSeen=uniq([...state.theatreSeen,key]);save();let i=0;const el=$('#theatre');el.classList.remove('hidden');playSfx('door');
-  function frame(){const f=seq[i];$('#theatreImg').src=f.img.startsWith('ev_')||f.img.startsWith('scene_')?`assets/images/${f.img}`:`assets/images/${f.img}`;$('#theatreSceneLabel').textContent=f.scene||'';$('#theatreTime').textContent=f.time||'';$('#theatreSpeaker').textContent=f.speaker||'';$('#theatreLine').textContent=f.line||'';$('#theatreHud').classList.toggle('no-rec',!(f.scene||'').includes('ROOM'));}
-  function next(){if(i<seq.length-1){i++;playSfx(i%2?'paper':'rec');frame()}else{el.classList.add('hidden');syncAmbient();done?.()}}
-  frame();$('#theatreNext').onclick=next;$('#theatreSkip').onclick=()=>{el.classList.add('hidden');syncAmbient();done?.()};syncAmbient();
-}
-function showTransition(small,big,done){const t=$('#transition');$('#transitionSmall').textContent=small;$('#transitionBig').textContent=big;t.classList.remove('hidden');playSfx('low');setTimeout(()=>playSfx('stamp'),420);setTimeout(()=>{t.classList.add('hidden');done?.()},2200)}
-
-/* ---------- GLOBAL EVENTS ---------- */
-function start(mode){reset(mode);$('#boot').classList.add('hidden');$('#app').classList.remove('hidden');state.tab='case';save();render();setTimeout(()=>showTheatre('prologue',()=>render()),250)}
-function continueGame(){if(!load())return start('guided');$('#boot').classList.add('hidden');$('#app').classList.remove('hidden');render()}
-function bindGlobal(){
-  $$('[data-act="new"]').forEach(b=>b.onclick=()=>start(b.dataset.mode||'guided'));$('[data-act="continue"]').onclick=continueGame;
-  document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;if(x==='sound')toggleSound();if(x==='help')showHint();if(x==='tools')tools();if(x==='notebook')showNotebook();if(x==='notebook-close')closeNotebook();if(x==='close')closeModal();if(x==='new-independent')start('independent')});
-  $('#mobileMenu').onclick=()=>$('#tabs').classList.toggle('open');
-  $('#notesToggle')?.addEventListener('click',()=>{});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeNotebook();$('#tabs').classList.remove('open')}});
+function renderEnding(){
+  ambient('records');
+  const complete=state.voiceSeen;
+  $('#view').innerHTML=`<section class="ending-page"><div class="ending-sheet"><div class="mono">SUPPLEMENTAL REVIEW / CLOSED</div><h1>${complete?'结局 · 第二份口供':'结局 · 分层责任'}</h1>
+  <p>原“陈默单独故意杀人”移送意见被撤回。案件重新拆分为最初伤害、救助中断、事后时间线设计与虚假自首。</p>
+  ${complete?'<p>你还把E18的11秒自动录音纳入了卷宗。它没有改变最初伤害发生在谁手里，但使“为什么急救被中断”的决策过程获得了更完整的证据。</p>':''}
+  <div class="outcomes">
+    <div class="outcome"><b>陈默</b><small>虚假自首另案审查</small><p>主动认罪不再被当作最初行为的直接证明。</p></div>
+    <div class="outcome"><b>林夏</b><small>初始伤害与救助行为复核</small><p>最初冲突与之后的救助选择分别评价。</p></div>
+    <div class="outcome"><b>赵序</b><small>事后掩饰行为复核</small><p>没有篡改数据库，但其利用多系统记录形成错误身份时间线的行为被固定。</p></div>
+    <div class="outcome"><b>韩川</b><small>原案质量复盘</small><p>真实记录被错误地写成了“本人持续活动”。</p></div>
+  </div>
+  <div class="ending-actions"><button id="truthReplay" class="primary">重看第一份口供 · 真相标注</button><button id="restart">重新开始案件</button></div></div></section>`;
+  $('#truthReplay').onclick=()=>showFilm('replayTruth');
+  $('#restart').onclick=()=>{reset();location.reload()};
 }
 
-bindGlobal();
-const canContinue=hasSave();$('[data-act="continue"]').disabled=!canContinue;
-if(meta.completed)$('#independentBoot').classList.remove('hidden');
+/* ===== folder / people ===== */
+function openFolder(tab='evidence'){$('#folder').classList.remove('hidden');renderFolder(tab);playFx('paper')}
+function renderFolder(tab){
+  $$('[data-folder-tab]').forEach(b=>b.classList.toggle('active',b.dataset.folderTab===tab));
+  const body=$('#folderBody');
+  if(tab==='evidence'){
+    body.innerHTML=`<div class="folder-ev-grid">${Object.entries(D.evidence).filter(([id])=>state.viewed.includes(id)).map(([id,e])=>`<button class="folder-ev" data-folder-ev="${id}"><img src="assets/images/${e.img}"><b>${e.no}</b><div>${esc(e.name)}</div></button>`).join('')||'<p>还没有阅过的材料。</p>'}</div>`;
+    $$('[data-folder-ev]').forEach(b=>b.onclick=()=>openEvidence(b.dataset.folderEv));
+  }else if(tab==='facts'){
+    body.innerHTML=state.facts.map(x=>`<div class="folder-fact">${esc(x)}</div>`).join('')||'<p>这里只记录你已经亲手确认的事实。</p>';
+  }else{
+    body.innerHTML=`<div class="people-file">${Object.values(D.people).map(p=>`<div class="person-file"><b>${p.name}</b><small>${p.role}</small><p>${p.public}</p>${state.stage>=8?`<p>${p.later}</p>`:''}</div>`).join('')}</div>`;
+  }
+}
+$$('[data-folder-tab]').forEach(b=>b.onclick=()=>renderFolder(b.dataset.folderTab));
+
+/* ===== hint ===== */
+function hintKey(){if(state.stage===0)return'transfer';if(state.stage===1)return'drawer';if(state.stage===2)return'records';if(state.stage===3)return'arrival';if(state.stage===4)return'bookstore';if(state.stage===5)return'property';if(state.stage===6)return'forensic';return'final'}
+function openHint(){
+  const k=hintKey();const lv=state.hintLevel[k]||0;$('#hintText').textContent=lv?D.hints[k][Math.min(lv-1,2)]:'提示只在你主动打开时出现，不会自动写到页面上。';$('#hintPanel').classList.remove('hidden');
+}
+function nextHint(){const k=hintKey();state.hintLevel[k]=Math.min(3,(state.hintLevel[k]||0)+1);save();$('#hintText').textContent=D.hints[k][state.hintLevel[k]-1]}
+
+/* ===== modal ===== */
+function openModal(html){$('#modalBody').innerHTML=html;$('#modal').classList.remove('hidden');playFx('paper')}
+function closeModal(refresh=true){$('#modal').classList.add('hidden');if(refresh&&!$('#app').classList.contains('hidden')&&$('#theatre').classList.contains('hidden'))render()}
+function tools(){
+  openModal(`<div class="doc-meta"><h2>案件工具</h2><p><button id="toolSave">立即保存</button> <button id="toolExport">导出存档</button> <button id="toolImport">导入存档</button> <button id="toolReset">重置案件</button></p><input type="file" id="importFile" accept="application/json" class="hidden"></div>`);
+  $('#toolSave').onclick=()=>{save();toast('已保存')};
+  $('#toolExport').onclick=()=>{const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='case17_save.json';a.click();URL.revokeObjectURL(a.href)};
+  $('#toolImport').onclick=()=>$('#importFile').click();
+  $('#importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);state={...defaults(),...x,final:{...defaults().final,...(x.final||{})}};save();closeModal(false);render();toast('存档已导入')}catch(err){toast('存档格式无效')}};r.readAsText(f)};
+  $('#toolReset').onclick=()=>{if(confirm('确定重置案件？')){reset();location.reload()}};
+}
+
+/* ===== render ===== */
+function render(){
+  if(state.ending){renderEnding();return}
+  $('#hudLocation').textContent=state.location==='hall'?(state.stage<2?'案卷室':'补充复核走廊'):(locationInfo[state.location]?.[0]||'第17号案件');
+  $('#hudStatus').textContent=state.stage<2?'TRANSFER CHECK':'SUPPLEMENTAL REVIEW';
+  $('.back-location').style.visibility=state.location==='hall'?'hidden':'visible';
+  if(state.location==='hall')renderHall();
+  else if(state.location==='interrogation')renderInterrogation();
+  else if(state.location==='scene')renderScene();
+  else if(state.location==='evidence')renderEvidence();
+  else if(state.location==='video')renderVideo();
+  else if(state.location==='bookstore')renderBookstore();
+  else if(state.location==='property')renderProperty();
+  else if(state.location==='forensic')renderForensic();
+  else if(state.location==='review')renderReview();
+  syncAmbient();save();
+}
+
+/* global actions */
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-action]');if(!a)return;
+  const act=a.dataset.action;
+  if(act==='hall'){state.location='hall';save();render()}
+  else if(act==='folder')openFolder();
+  else if(act==='folder-close')$('#folder').classList.add('hidden');
+  else if(act==='hint')openHint();
+  else if(act==='hint-next')nextHint();
+  else if(act==='hint-close')$('#hintPanel').classList.add('hidden');
+  else if(act==='sound')toggleSound();
+  else if(act==='tools')tools();
+  else if(act==='close-modal')closeModal();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();$('#folder').classList.add('hidden');$('#hintPanel').classList.add('hidden')}});
+
 })();

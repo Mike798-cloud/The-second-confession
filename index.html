@@ -1,107 +1,108 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0d1011">
-  <meta name="color-scheme" content="dark">
-  <title>第二份口供｜第17号案件</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d0e">
+<title>第二份口供｜第17号案件</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="boot" class="boot">
-  <div class="boot-grain" aria-hidden="true"></div>
-  <main class="intake-desk">
-    <section class="transfer-folder" aria-label="第17号案件移送卷">
-      <div class="folder-lip">荔州市公安局 · 刑侦卷宗</div>
-      <div class="transfer-paper">
-        <div class="boot-kicker">CASE NO. 17 / TRANSFER CHECK</div>
+  <div class="boot-bg"></div>
+  <div class="boot-vignette"></div>
+  <main class="boot-desk">
+    <section class="boot-file">
+      <div class="file-edge">荔州市公安局 · 刑侦案件移送卷</div>
+      <div class="file-sheet">
+        <div class="mono">CASE NO.17 / TRANSFER FILE</div>
         <h1>第二份口供</h1>
-        <p class="case-subtitle">第17号案件 · 移送材料核验</p>
-        <div class="thin-rule"></div>
-        <dl class="transfer-summary">
+        <p>第17号案件 · 移送材料核验</p>
+        <div class="file-rule"></div>
+        <dl>
           <div><dt>死者</dt><dd>邱承 / 38岁</dd></div>
           <div><dt>到案人员</dt><dd>陈默 / 主动投案</dd></div>
-          <div><dt>案发地点</dt><dd>西河公寓 B座4-702</dd></div>
-          <div><dt>卷宗状态</dt><dd>原案材料已齐备</dd></div>
+          <div><dt>地点</dt><dd>西河公寓 B座4-702</dd></div>
+          <div><dt>卷宗</dt><dd>讯问、现场、物证材料齐备</dd></div>
         </dl>
-        <p class="boot-copy">你接手的是一份等待移送的卷宗。先按程序核对讯问、现场与物证记录，确认材料是否相互对应。</p>
+        <p class="file-note">你接手的是一份等待移送的卷宗。按程序核对材料是否对应。</p>
         <div class="boot-actions">
-          <button class="primary" data-act="new" data-mode="guided">接收卷宗</button>
-          <button data-act="continue">继续上次进度</button>
-          <button id="independentBoot" class="ghost hidden" data-act="new" data-mode="independent">二周目 · 独立复核</button>
+          <button class="primary" data-action="new">签收卷宗</button>
+          <button data-action="continue" id="continueBtn">继续上次进度</button>
+          <button class="ghost hidden" data-action="truth-replay" id="truthReplayBoot">真相标注回看</button>
         </div>
-        <div class="boot-foot">建议耳机 · 关键声音均有文字替代 · 自动存档</div>
+        <small>建议耳机 · 关键声音均有文字替代 · 自动存档</small>
       </div>
     </section>
-    <aside class="intake-side" aria-label="随卷附件">
-      <div class="evidence-envelope">
-        <span>随卷附件 01</span>
-        <b>第一次讯问录像</b>
-        <small>ROOM 03 / REC 21:14:08</small>
-      </div>
-      <div class="evidence-envelope second">
-        <span>随卷附件 02</span>
-        <b>现场勘验册</b>
-        <small>4-702 / 23 PAGES</small>
-      </div>
+    <aside class="boot-side">
+      <div class="envelope"><span>随卷附件 01</span><b>第一次讯问录像</b><small>ROOM 03 / REC</small></div>
+      <div class="envelope"><span>随卷附件 02</span><b>现场勘验册</b><small>4-702 / SEALED</small></div>
     </aside>
   </main>
 </div>
 
 <div id="app" class="app hidden">
-  <header class="casebar">
-    <div class="case-brand">
-      <button id="mobileMenu" class="mobile-menu" aria-label="打开导航">☰</button>
-      <div><b id="casebarTitle">荔州市公安局 · 第17号案件</b><span id="casebarSub">TRANSFER CHECK / INTERNAL</span></div>
-    </div>
-    <div class="case-meta">
-      <div class="chapter-chip"><span id="chapterLabel">移送核验</span><small id="progressLabel">材料 0 / 14</small></div>
-      <button id="soundToggle" data-act="sound" aria-pressed="true">声音：开</button>
-      <button data-act="notebook">笔记</button>
-      <button data-act="help">提示</button>
-      <button data-act="tools">工具</button>
+  <header class="hud">
+    <button class="back-location" data-action="hall">← 返回走廊</button>
+    <div class="hud-title"><b id="hudLocation">案卷室</b><span id="hudStatus">移送材料核验</span></div>
+    <div class="hud-actions">
+      <button data-action="folder">案件袋</button>
+      <button data-action="hint">提示</button>
+      <button data-action="sound" id="soundBtn">声音：开</button>
+      <button data-action="tools">工具</button>
     </div>
   </header>
-  <div id="procedure" class="procedure-strip"></div>
-  <div class="shell">
-    <aside class="tabs" id="tabs" aria-label="案件导航"></aside>
-    <main class="workspace"><section id="view" aria-live="polite"></section></main>
-  </div>
+  <main id="view" class="view"></main>
 </div>
 
-<div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="案件资料">
-  <div class="modal-panel">
-    <button class="modal-close" data-act="close">关闭 Esc</button>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <button class="modal-close" data-action="close-modal">×</button>
     <div id="modalBody"></div>
   </div>
 </div>
 
-<div id="notebook" class="notebook hidden" role="dialog" aria-modal="true" aria-label="调查笔记">
-  <div class="notebook-page">
-    <button class="notebook-close" data-act="notebook-close">×</button>
-    <div class="notebook-kicker">CASE 17 / PERSONAL NOTES</div>
-    <h2>调查笔记</h2>
-    <div id="notebookBody"></div>
+<div id="folder" class="folder-overlay hidden" role="dialog" aria-modal="true">
+  <div class="folder-shell">
+    <button class="folder-close" data-action="folder-close">关闭卷宗</button>
+    <div class="folder-tabs">
+      <button data-folder-tab="evidence" class="active">证物</button>
+      <button data-folder-tab="facts">已确认记录</button>
+      <button data-folder-tab="people">人物</button>
+    </div>
+    <div id="folderBody"></div>
   </div>
 </div>
 
-<div id="theatre" class="theatre hidden" role="dialog" aria-modal="true" aria-label="案件演出">
-  <div class="film-frame">
-    <img id="theatreImg" alt="案件画面">
-    <div class="film-bars"></div>
-    <div class="film-grain"></div>
-    <div id="theatreHud" class="theatre-hud"><span class="rec-dot">● REC</span><span id="theatreSceneLabel">ROOM 03</span><span id="theatreTime">21:14:08</span></div>
-    <div class="film-subtitle"><div id="theatreSpeaker" class="speaker"></div><div id="theatreLine" class="line"></div></div>
-    <button id="theatreNext" class="film-next" aria-label="继续">继续</button>
-    <button id="theatreSkip" class="film-skip">跳过</button>
+<div id="hintPanel" class="hint-panel hidden" role="dialog" aria-modal="true">
+  <div class="hint-card">
+    <button data-action="hint-close">×</button>
+    <div class="mono">SUN LAN / REVIEW ASSIST</div>
+    <h2>需要提示？</h2>
+    <p id="hintText">提示只在你主动打开时出现。</p>
+    <div class="hint-actions">
+      <button data-action="hint-next">下一层提示</button>
+      <button data-action="hint-close">先自己查</button>
+    </div>
   </div>
 </div>
 
-<div id="transition" class="transition hidden" aria-live="assertive">
-  <div class="transition-inner"><div id="transitionSmall"></div><div id="transitionBig"></div></div>
+<div id="theatre" class="theatre hidden" role="dialog" aria-modal="true">
+  <div class="film-grain"></div>
+  <div class="letterbox top"></div>
+  <div class="letterbox bottom"></div>
+  <img id="filmImg" alt="">
+  <div id="filmHud" class="film-hud"></div>
+  <div id="filmStamp" class="film-stamp hidden"></div>
+  <div id="filmCaption" class="film-caption"></div>
+  <div class="subtitle-wrap">
+    <div id="filmSpeaker" class="film-speaker"></div>
+    <div id="filmLine" class="film-line"></div>
+  </div>
+  <button id="filmAdvance" class="film-advance" aria-label="继续">继续</button>
 </div>
-<div id="toast" class="toast hidden" aria-live="polite"></div>
+
+<div id="toast" class="toast hidden"></div>
 
 <script src="data.js"></script>
 <script src="app.js"></script>
