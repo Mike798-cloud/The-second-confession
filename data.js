@@ -6,14 +6,14 @@ window.CASE17 = {
     date:"2026-05-18"
   },
   people:{
-    chen:{name:"陈默",role:"主动投案者 / 林夏弟弟",public:"28岁，网约车司机。案发后三天主动到案。",relation:"林夏的弟弟。少年时期由姐姐照顾长大。",later:"他并没有亲历最初冲突，但后来确实进入4-702，并主动承担了整起案件。"},
-    lin:{name:"林夏",role:"迟夏书店经营者",public:"34岁。与死者邱承存在担保债务纠纷。",relation:"陈默姐姐，与赵序相识多年。",later:"她在最初冲突中造成伤害；之后曾尝试拨打120，却没有完成求助。"},
-    zhao:{name:"赵序",role:"物业设备运维工程师",public:"40岁。负责西河公寓门禁、水表等设备维护。",relation:"与林家相识十余年。",later:"他没有篡改系统数据，但熟悉各套系统记录的边界，并参与了事后掩饰设计。"},
-    qiu:{name:"邱承",role:"死者 / 民间债务中介",public:"38岁。长期处理私人债务，曾被投诉暴力催收。",relation:"与林夏存在债务纠纷。",later:"其个人品行与死亡过程需要分别评价。"},
-    han:{name:"韩川",role:"原案主办侦查员",public:"45岁。陈默投案后负责原案证据闭环。",relation:"与涉案人员无私人关系。",later:"没有证据证明他伪造材料；原案错误来自对真实记录的过度解释。"},
-    sun:{name:"孙岚",role:"行为分析顾问",public:"36岁。本次补充复核顾问。",relation:"未参与原案侦查。",later:"她坚持只记录可观察行为，不把停顿、平静等表现直接写成谎言。"},
-    feng:{name:"冯越",role:"西河公寓夜班保安",public:"52岁。案发当晚值班。",relation:"与住户无私人关系。",later:"最初笔录因担心离岗抽烟被处罚而压缩了一段目击。"},
-    zhong:{name:"钟嘉",role:"快递员",public:"25岁。案发夜在快递柜附近补柜。",relation:"与核心人物无私人关系。",later:"他只听到柜门开启，从未确认开柜人的脸。"}
+    chen:{name:"陈默",role:"主动投案者 / 林夏弟弟",portrait:"portrait_chen.jpg",public:"28岁，网约车司机。案发后三天主动到案。",relation:"林夏的弟弟。少年时期由姐姐照顾长大。",midStage:3,mid:"补充影像确认：其车辆21:27进入车库，21:29才进入B座。",later:"他并没有亲历最初冲突，但后来确实进入4-702，并主动承担了整起案件。"},
+    lin:{name:"林夏",role:"迟夏书店经营者",portrait:"portrait_lin.jpg",public:"34岁。与死者邱承存在担保债务纠纷。",relation:"陈默姐姐，与赵序相识多年。",midStage:4,mid:"20:50消息缓存显示，她在陈默到场前已经知道邱承倒地且仍有呼吸。",later:"她在最初冲突中造成伤害；之后曾尝试拨打120，却没有完成求助。"},
+    zhao:{name:"赵序",role:"物业设备运维工程师",portrait:"portrait_zhao.jpg",public:"40岁。负责西河公寓门禁、水表等设备维护。",relation:"与林家相识十余年。",midStage:5,mid:"物业审计日志记录其21:06—21:10连续查询门禁与住户卡信息。",later:"他没有篡改系统数据，但熟悉各套系统记录的边界，并参与了事后掩饰设计。"},
+    qiu:{name:"邱承",role:"死者 / 民间债务中介",portrait:"portrait_qiu.jpg",public:"38岁。长期处理私人债务，曾被投诉暴力催收。",relation:"与林夏存在债务纠纷。",midStage:6,mid:"法医补充材料将“最初伤害”与“伤后救助窗口”拆成了两个时间阶段。",later:"其个人品行与死亡过程需要分别评价。"},
+    han:{name:"韩川",role:"原案主办侦查员",portrait:"portrait_han.jpg",public:"45岁。陈默投案后负责原案证据闭环。",relation:"与涉案人员无私人关系。",midStage:2,mid:"补充复核开始后，他同意把原案中的电子记录重新按来源拆开，而不是沿用旧结论。",later:"没有证据证明他伪造材料；原案错误来自对真实记录的过度解释。"},
+    sun:{name:"孙岚",role:"行为分析顾问",portrait:"portrait_sun.jpg",public:"36岁。本次补充复核顾问。",relation:"未参与原案侦查。",midStage:1,mid:"她要求讯问观察只写可见动作与停顿，不把“冷静”“沉默”直接判成谎言。",later:"她坚持只记录可观察行为，不把停顿、平静等表现直接写成谎言。"},
+    feng:{name:"冯越",role:"西河公寓夜班保安",portrait:"scene_corridor.jpg",public:"52岁。案发当晚值班。",relation:"与住户无私人关系。",midStage:3,mid:"补录笔录承认自己20:30前后曾离岗抽烟，因此原笔录中的时间描述并不完整。",later:"最初笔录因担心离岗抽烟被处罚而压缩了一段目击。"},
+    zhong:{name:"钟嘉",role:"快递员",portrait:"scene_bookstore.jpg",public:"25岁。案发夜在快递柜附近补柜。",relation:"与核心人物无私人关系。",midStage:2,mid:"补充说明：21:38只听见柜门开启声，没有看清开柜人的脸。",later:"他只听到柜门开启，从未确认开柜人的脸。"}
   },
   evidence:{
     confession:{no:"E01",name:"第一次讯问录像转写",img:"ev_confession.jpg",kind:"讯问",stage:0,raw:"陈默称21:45左右到4-702，使用桌边黄铜书挡击打邱承；称后来把书挡放回书桌第二层抽屉。"},
@@ -72,7 +72,7 @@ window.CASE17 = {
       {img:"ev_water.jpg",ambient:"records",caption:"21:31:17",hold:550},
       {img:"ev_parcel.jpg",ambient:"records",caption:"21:38:22",hold:550},
       {img:"ev_taxi.jpg",ambient:"records",caption:"21:52:04",hold:750},
-      {img:"film_records_detail.jpg",ambient:"records",speaker:"韩川",line:"把20:36以后的记录全部单独列出来。",hold:1200}
+      {img:"film_timeline_v5.jpg",ambient:"records",speaker:"韩川",line:"把20:36以后的记录按原始来源重新排一次。",hold:1200}
     ],
     arrivalBreak:[
       {img:"ev_chen_arrival.jpg",ambient:"records",caption:"21:29 / B座消防梯",hold:1100},
@@ -87,12 +87,13 @@ window.CASE17 = {
       {img:"film_bookstore_counter.jpg",ambient:"rain",caption:"4秒",hold:1200}
     ],
     propertyAudit:[
-      {img:"film_records_wide.jpg",ambient:"records",caption:"21:06 / 物业设备终端",hold:700},
+      {img:"film_records_detail.jpg",ambient:"records",caption:"21:06 / 西河公寓物业值班室",hold:700},
       {img:"ev_zhao_log.jpg",ambient:"records",sfx:"printer",caption:"审计记录",hold:1200},
-      {img:"film_records_detail.jpg",ambient:"records",speaker:"审计员",line:"没有写入。没有删除。没有改时间。",hold:1300}
+      {img:"film_records_detail.jpg",ambient:"records",speaker:"审计员",line:"没有写入。没有删除。没有改时间。",hold:1300},
+      {img:"portrait_zhao.jpg",ambient:"records",speaker:"赵序",line:"我查过门禁，也查过住户卡。系统里留下什么，我比谁都清楚。",hold:1500}
     ],
     rescueWindow:[
-      {img:"ev_autopsy.jpg",ambient:"records",sfx:"paper",caption:"法医底稿 · 补充复核",hold:1100},
+      {img:"film_forensic_v5.jpg",ambient:"records",sfx:"paper",caption:"法医底稿 · 补充复核",hold:1100},
       {img:"ev_bookshop_msg.jpg",ambient:"records",speaker:"林夏 · 20:50",line:"“他倒下了，还在喘。”",hold:1100},
       {img:"film_bookstore_counter.jpg",ambient:"rain",sfx:"phone",caption:"20:52 / 120 / 4秒",hold:900},
       {img:"film_corridor_door.jpg",ambient:"rain",caption:"21:29 / 陈默进入B座",hold:900}
@@ -105,12 +106,15 @@ window.CASE17 = {
       {img:"film_interrogation_left.jpg",ambient:"interrogation",speaker:"陈默",line:"有人告诉我，什么细节必须说对。",hold:1600}
     ],
     ending:[
-      {img:"film_records_detail.jpg",ambient:"records",sfx:"printer",caption:"第17号案件补充复核意见生成中",hold:1000},
-      {img:"film_records_wide.jpg",ambient:"records",sfx:"stamp",stamp:"撤回原移送意见",hold:1100},
+      {img:"film_review_meeting.jpg",ambient:"records",sfx:"printer",caption:"第17号案件补充复核会议",hold:1000},
+      {img:"film_review_meeting.jpg",ambient:"records",sfx:"stamp",stamp:"撤回原移送意见",hold:1100},
       {img:"film_interrogation_wide.jpg",ambient:"interrogation",sfx:"door",caption:"陈默 · 补充讯问",hold:800},
       {img:"film_interrogation_table.jpg",ambient:"interrogation",speaker:"韩川",line:"陈默。我们重新来。",hold:1000},
       {img:"film_interrogation_left.jpg",ambient:"interrogation",speaker:"陈默",line:"我姐不知道我要来自首。",hold:1500},
-      {img:"film_records_wide.jpg",ambient:"records",caption:"一个案件被重新拆成四段行为。",hold:1200}
+      {img:"portrait_lin.jpg",ambient:"records",speaker:"林夏",line:"我拨了120。四秒以后，我挂了。",hold:1500},
+      {img:"portrait_zhao.jpg",ambient:"records",speaker:"赵序",line:"记录没被改过。被利用的是你们看记录的方式。",hold:1600},
+      {img:"portrait_han.jpg",ambient:"records",speaker:"韩川",line:"那就把原结论撤回来。每一段行为，重新写。",hold:1500},
+      {img:"film_review_meeting.jpg",ambient:"records",caption:"原案的一句“人是我杀的”，被重新拆回四段可以分别证明的行为。",hold:1400}
     ],
     replayTruth:[
       {img:"film_interrogation_left.jpg",ambient:"interrogation",speaker:"陈默 · 第一次讯问",line:"“桌边那只黄铜书挡。”",caption:"真相标注：来自事后到场所见。",hold:1400},
