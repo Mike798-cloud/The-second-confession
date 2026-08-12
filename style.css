@@ -140,3 +140,21 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 @keyframes filmPanRight{from{transform:scale(1.07) translateX(-1.5%)}to{transform:scale(1.1) translateX(1.5%)}}
 .expert-submit{margin-top:22px}
 .replay-note{border-top:1px solid #aaa296;padding-top:14px;color:#625e56}
+
+/* ===== V6：8.5+ 深度交互与电影化 ===== */
+.scene-shade-soft{background:linear-gradient(90deg,#0007 0,#0000 38%,#0002 70%,#0008 100%),linear-gradient(0deg,#0008,transparent 34%)}
+.scene-detail{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(260px,.75fr);gap:20px;align-items:start}.scene-detail>img{width:100%;max-height:72vh;object-fit:contain;background:#0b0d0e;border:1px solid #6b655b}.scene-detail .doc-meta{padding-right:10px}
+.scene-compare img{min-height:280px;object-fit:cover}
+.interrogation-shot{transition:opacity .22s ease,transform .8s ease;filter:brightness(.48) saturate(.58) contrast(1.1)!important}.interrogation-console{width:min(860px,76vw)}
+.interrogation-evidence{margin-top:14px;border-top:1px solid #313735;padding-top:12px}.interrogation-evidence-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:8px}.interrogation-evidence-row button{display:grid;grid-template-columns:72px 1fr;gap:9px;align-items:center;min-width:220px;text-align:left;background:#151919}.interrogation-evidence-row img{width:72px;height:54px;object-fit:cover;filter:saturate(.65)}.interrogation-evidence-row span{font-size:11px}
+.record-question{border-top:1px solid #2f3532;margin-top:9px;padding-top:8px}.record-question p{min-height:34px;color:#c8cbc6;font:12px/1.55 KaiTi,serif}.record-question .tag-row button{font-size:10px;line-height:1.25}.record-question .tag-row button.active{background:#6f443d;border-color:#9d7168}
+.timeline-builder{border-left:3px solid #7a403a}.timeline-source{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.timeline-source button{background:#1a1f20}.timeline-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.timeline-slot{min-height:92px;border:1px dashed #59605d;background:#0e1212;padding:10px;display:flex;flex-direction:column;gap:8px;justify-content:center}.timeline-slot small{font:10px ui-monospace,monospace;color:#787e7a}.timeline-slot b{font:13px SimSun,serif;color:#e6e2d9}.timeline-slot span{color:#6e736f;font-size:11px}
+.op-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:12px 0}.op-grid button{font:11px ui-monospace,monospace;padding:10px 6px}.op-grid button.active{background:#6c4d42;border-color:#9f7668}
+.forensic-board{border-left:3px solid #7b403a}.forensic-board .compare-actions{margin-bottom:14px}.forensic-board button.active{background:#70453f;border-color:#a57c73}
+.source-replay{display:grid;gap:10px;margin:18px 0}.source-row{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;align-items:center;border-top:1px solid #aaa296;padding-top:10px}.source-row blockquote{margin:0;font:18px/1.65 KaiTi,serif}.source-row select{background:#eee7da;color:#292720;border:1px solid #a29a8d;padding:9px}
+.folder-group-title{font:700 18px SimSun,serif;margin:22px 0 8px;border-bottom:1px solid #aaa296;padding-bottom:7px}.witness-file .person-file{min-height:145px;opacity:.92}
+.ending-sheet .review-metrics{display:flex;gap:14px;flex-wrap:wrap;border-top:1px solid #aaa296;padding-top:12px;margin-top:18px}.review-metrics span{font:11px ui-monospace,monospace;color:#68635b}
+
+@media(max-width:760px){
+ .scene-detail{grid-template-columns:1fr}.interrogation-console{width:auto;left:10px;right:10px}.interrogation-evidence-row button{min-width:0;flex:1 1 190px}.op-grid{grid-template-columns:repeat(3,1fr)}.timeline-slots{grid-template-columns:1fr}.source-row{grid-template-columns:1fr}.scene-compare img{min-height:180px}
+}
