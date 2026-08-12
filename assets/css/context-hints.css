@@ -1,0 +1,18 @@
+/* 第二份口供 · 页面动态提示 / 三级提示回看 v1.1 */
+.hint-card .context-hint-meta{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0 11px}
+.hint-card .context-hint-chip{display:inline-flex;align-items:center;min-height:26px;padding:4px 8px;border:1px solid rgba(255,255,255,.16);border-radius:3px;background:rgba(255,255,255,.045);font:11px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace;color:#b9c0c2}
+.hint-card .context-hint-chip.warn{border-color:rgba(196,150,72,.42);color:#e4c98f;background:rgba(196,150,72,.08)}
+.hint-card .context-hint-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:14px 0 10px}
+.hint-card .context-hint-progress button{min-height:36px;padding:7px 8px;font-size:12px}
+.hint-card .context-hint-progress button.locked{opacity:.36;cursor:not-allowed}
+.hint-card .context-hint-progress button.active{outline:1px solid rgba(210,181,123,.8);background:rgba(210,181,123,.12)}
+.hint-card #hintText.context-hint-text{white-space:pre-line;line-height:1.75}
+.hint-card .hint-archive{max-height:42vh;overflow:auto;padding-right:4px}
+.hint-card .hint-archive-entry{padding:10px 0;border-top:1px solid rgba(255,255,255,.1)}
+.hint-card .hint-archive-entry:first-child{border-top:0}
+.hint-card .hint-archive-entry b{display:block;margin-bottom:5px;color:#e0d8c7}
+.hint-card .hint-archive-entry small{display:block;margin-bottom:5px;color:#8f999c}
+.hint-card .hint-archive-entry .hint-line{display:block;margin:3px 0;font-size:13px;line-height:1.6}
+.hint-card .hint-review-note{margin:8px 0 0;color:#929b9e;font-size:11px}
+.hud-actions [data-action="hint"]{white-space:nowrap}
+@media (max-width:720px){.hint-card .context-hint-progress{grid-template-columns:repeat(2,minmax(0,1fr))}.hint-card .context-hint-progress button{min-height:40px}.hint-card .hint-archive{max-height:38vh}}
